@@ -198,6 +198,14 @@ const deprecatedSpecialForms = new Map<string, DeprecatedForm>([
     ['Union', { version: PythonVersion.V3_10, fullName: 'typing.Union', replacementText: '|' }],
 ]);
 
+const typeMap = new Map<string, string>([
+    ["Series", "pandas.Series"],
+    ["DataFrame", "pandas.DataFrame"],
+    ["Module(\".preprocessing\")", "Module(\"sklearn.preprocessing\")"]
+]);
+
+let name2type = new Map<string, [string, string]>();
+
 export class Checker extends ParseTreeWalker {
     private readonly _moduleNode: ModuleNode;
     private readonly _fileInfo: AnalyzerFileInfo;
@@ -234,6 +242,8 @@ export class Checker extends ParseTreeWalker {
         this._validateSymbolTables();
 
         this._reportDuplicateImports();
+        let typeResult = JSON.stringify(Object.fromEntries(name2type));
+        return typeResult;
     }
 
     override walk(node: ParseNode) {
@@ -1131,6 +1141,25 @@ export class Checker extends ParseTreeWalker {
         return false;
     }
 
+    printType(node: NameNode) {
+        let ret = this._evaluator.getType(node)
+        if (ret !== undefined) {
+            let type = this._evaluator.printType(ret);
+            if (typeMap.has(type))
+                type = typeMap.get(type) || "";
+            if (!(node.value in name2type)) {
+                if (type.startsWith("Module("))
+                    name2type.set(node.value, ["module", type.replace(/Module|\"|\(|\)/g, '')])
+                else {
+                    if (node.value == type) 
+                        name2type.set(node.value, ["var", type])
+                    else
+                        name2type.set(node.value, ["var", type]);
+                }
+            }
+        }
+    }
+
     override visitName(node: NameNode) {
         // Determine if we should log information about private usage.
         this._conditionallyReportPrivateUsage(node);
@@ -1143,7 +1172,7 @@ export class Checker extends ParseTreeWalker {
         // Report the use of a deprecated symbol. For now, this functionality
         // is disabled. We'll leave it in place for the future.
         // this._reportDeprecatedUse(node);
-
+        this.printType(node)
         return true;
     }
 
