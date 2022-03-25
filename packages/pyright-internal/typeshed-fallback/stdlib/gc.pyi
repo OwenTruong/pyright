@@ -1,16 +1,12 @@
 import sys
-from typing import Any, Callable
-from typing_extensions import Literal
+from typing import Any
 
-DEBUG_COLLECTABLE: Literal[2]
-DEBUG_LEAK: Literal[38]
-DEBUG_SAVEALL: Literal[32]
-DEBUG_STATS: Literal[1]
-DEBUG_UNCOLLECTABLE: Literal[4]
-
-_CallbackType = Callable[[Literal["start", "stop"], dict[str, int]], object]
-
-callbacks: list[_CallbackType]
+DEBUG_COLLECTABLE: int
+DEBUG_LEAK: int
+DEBUG_SAVEALL: int
+DEBUG_STATS: int
+DEBUG_UNCOLLECTABLE: int
+callbacks: list[Any]
 garbage: list[Any]
 
 def collect(generation: int = ...) -> int: ...

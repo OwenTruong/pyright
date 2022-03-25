@@ -1,10 +1,7 @@
 import sys
 from _typeshed import Self, StrOrBytesPath
 from types import CodeType
-from typing import Any, Callable, TypeVar
-from typing_extensions import ParamSpec
-
-__all__ = ["run", "runctx", "Profile"]
+from typing import Any, Callable, Tuple, TypeVar
 
 def run(statement: str, filename: str | None = ..., sort: str | int = ...) -> None: ...
 def runctx(
@@ -12,8 +9,7 @@ def runctx(
 ) -> None: ...
 
 _T = TypeVar("_T")
-_P = ParamSpec("_P")
-_Label = tuple[str, int, str]
+_Label = Tuple[str, int, str]
 
 class Profile:
     stats: dict[_Label, tuple[int, int, int, int, dict[_Label, tuple[int, int, int, int]]]]  # undocumented
@@ -28,7 +24,7 @@ class Profile:
     def snapshot_stats(self) -> None: ...
     def run(self: Self, cmd: str) -> Self: ...
     def runctx(self: Self, cmd: str, globals: dict[str, Any], locals: dict[str, Any]) -> Self: ...
-    def runcall(self, __func: Callable[_P, _T], *args: _P.args, **kw: _P.kwargs) -> _T: ...
+    def runcall(self, __func: Callable[..., _T], *args: Any, **kw: Any) -> _T: ...
     if sys.version_info >= (3, 8):
         def __enter__(self: Self) -> Self: ...
         def __exit__(self, *exc_info: Any) -> None: ...

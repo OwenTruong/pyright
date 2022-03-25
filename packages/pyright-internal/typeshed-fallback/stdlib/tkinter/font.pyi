@@ -1,24 +1,25 @@
 import _tkinter
 import sys
 import tkinter
-from typing import Any, overload
+from typing import Any, List, Tuple, Union, overload
 from typing_extensions import Literal, TypedDict
-
-if sys.version_info >= (3, 9):
-    __all__ = ["NORMAL", "ROMAN", "BOLD", "ITALIC", "nametofont", "Font", "families", "names"]
 
 NORMAL: Literal["normal"]
 ROMAN: Literal["roman"]
 BOLD: Literal["bold"]
 ITALIC: Literal["italic"]
 
-_FontDescription = (
-    str  # "Helvetica 12"
-    | Font  # A font object constructed in Python
-    | list[Any]  # ("Helvetica", 12, BOLD)
-    | tuple[Any, ...]
-    | _tkinter.Tcl_Obj  # A font object constructed in Tcl
-)
+_FontDescription = Union[
+    # "Helvetica 12"
+    str,
+    # A font object constructed in Python
+    Font,
+    # ("Helvetica", 12, BOLD)
+    List[Any],
+    Tuple[Any, ...],
+    # A font object constructed in Tcl
+    _tkinter.Tcl_Obj,
+]
 
 class _FontDict(TypedDict):
     family: str
@@ -100,10 +101,9 @@ class Font:
     @overload
     def metrics(self, *, displayof: tkinter.Misc | None = ...) -> _MetricsDict: ...
     def measure(self, text: str, displayof: tkinter.Misc | None = ...) -> int: ...
-    def __eq__(self, other: object) -> bool: ...
 
-def families(root: tkinter.Misc | None = ..., displayof: tkinter.Misc | None = ...) -> tuple[str, ...]: ...
-def names(root: tkinter.Misc | None = ...) -> tuple[str, ...]: ...
+def families(root: tkinter.Misc | None = ..., displayof: tkinter.Misc | None = ...) -> Tuple[str, ...]: ...
+def names(root: tkinter.Misc | None = ...) -> Tuple[str, ...]: ...
 
 if sys.version_info >= (3, 10):
     def nametofont(name: str, root: tkinter.Misc | None = ...) -> Font: ...

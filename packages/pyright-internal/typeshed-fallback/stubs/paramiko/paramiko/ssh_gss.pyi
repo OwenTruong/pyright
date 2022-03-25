@@ -1,7 +1,7 @@
-from typing import Any
+from typing import Any, Tuple, Type
 
 GSS_AUTH_AVAILABLE: bool
-GSS_EXCEPTIONS: tuple[type[Exception], ...]
+GSS_EXCEPTIONS: Tuple[Type[Exception], ...]
 
 def GSSAuth(auth_method: str, gss_deleg_creds: bool = ...) -> _SSH_GSSAuth: ...
 

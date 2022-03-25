@@ -16,7 +16,6 @@ from .exceptions import (
     ConnectTimeout as ConnectTimeout,
     FileModeWarning as FileModeWarning,
     HTTPError as HTTPError,
-    JSONDecodeError as JSONDecodeError,
     ReadTimeout as ReadTimeout,
     RequestException as RequestException,
     Timeout as Timeout,

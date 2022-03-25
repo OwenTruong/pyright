@@ -1,5 +1,4 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import ImageFile
 
@@ -14,8 +13,8 @@ class IcoFile:
     def frame(self, idx): ...
 
 class IcoImageFile(ImageFile):
-    format: ClassVar[Literal["ICO"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
     @property
     def size(self): ...
     @size.setter

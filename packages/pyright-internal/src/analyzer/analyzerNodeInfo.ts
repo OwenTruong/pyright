@@ -30,7 +30,6 @@ import { Scope } from './scope';
 export interface DunderAllInfo {
     names: string[];
     stringNodes: StringNode[];
-    usesUnsupportedDunderAllForm: boolean;
 }
 
 interface AnalyzerNodeInfo {
@@ -161,12 +160,12 @@ export function setCodeFlowExpressions(node: ExecutionScopeNode, expressions: Se
     analyzerNode.codeFlowExpressions = expressions;
 }
 
-export function getCodeFlowComplexity(node: ExecutionScopeNode) {
+export function getCodeFlowComplexity(node: FunctionNode) {
     const analyzerNode = node as AnalyzerNodeInfo;
     return analyzerNode.codeFlowComplexity ?? 0;
 }
 
-export function setCodeFlowComplexity(node: ExecutionScopeNode, complexity: number) {
+export function setCodeFlowComplexity(node: FunctionNode, complexity: number) {
     const analyzerNode = node as AnalyzerNodeInfo;
     analyzerNode.codeFlowComplexity = complexity;
 }

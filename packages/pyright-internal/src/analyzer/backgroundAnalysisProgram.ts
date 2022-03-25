@@ -10,7 +10,7 @@
 import { CancellationToken } from 'vscode-languageserver';
 import { TextDocumentContentChangeEvent } from 'vscode-languageserver-textdocument';
 
-import { BackgroundAnalysisBase, IndexOptions } from '../backgroundAnalysisBase';
+import { BackgroundAnalysisBase } from '../backgroundAnalysisBase';
 import { ConfigOptions, ExecutionEnvironment } from '../common/configOptions';
 import { ConsoleInterface } from '../common/console';
 import { Diagnostic } from '../common/diagnostic';
@@ -20,7 +20,7 @@ import { Range } from '../common/textRange';
 import { IndexResults } from '../languageService/documentSymbolProvider';
 import { AnalysisCompleteCallback, analyzeProgram } from './analysis';
 import { ImportResolver } from './importResolver';
-import { Indices, MaxAnalysisTime, OpenFileOptions, Program } from './program';
+import { Indices, MaxAnalysisTime, Program } from './program';
 
 export class BackgroundAnalysisProgram {
     private _program: Program;
@@ -91,19 +91,19 @@ export class BackgroundAnalysisProgram {
         this._program.setAllowedThirdPartyImports(importNames);
     }
 
-    setFileOpened(filePath: string, version: number | null, contents: string, options: OpenFileOptions) {
-        this._backgroundAnalysis?.setFileOpened(filePath, version, [{ text: contents }], options);
-        this._program.setFileOpened(filePath, version, [{ text: contents }], options);
+    setFileOpened(filePath: string, version: number | null, contents: string, isTracked: boolean) {
+        this._backgroundAnalysis?.setFileOpened(filePath, version, [{ text: contents }], isTracked);
+        this._program.setFileOpened(filePath, version, [{ text: contents }], isTracked);
     }
 
     updateOpenFileContents(
         path: string,
         version: number | null,
         contents: TextDocumentContentChangeEvent[],
-        options: OpenFileOptions
+        isTracked: boolean
     ) {
-        this._backgroundAnalysis?.setFileOpened(path, version, contents, options);
-        this._program.setFileOpened(path, version, contents, options);
+        this._backgroundAnalysis?.setFileOpened(path, version, contents, isTracked);
+        this._program.setFileOpened(path, version, contents, isTracked);
         this.markFilesDirty([path], true);
     }
 
@@ -113,14 +113,14 @@ export class BackgroundAnalysisProgram {
         this._reportDiagnosticsForRemovedFiles(diagnostics);
     }
 
-    markAllFilesDirty(evenIfContentsAreSame: boolean, indexingNeeded = true) {
-        this._backgroundAnalysis?.markAllFilesDirty(evenIfContentsAreSame, indexingNeeded);
-        this._program.markAllFilesDirty(evenIfContentsAreSame, indexingNeeded);
+    markAllFilesDirty(evenIfContentsAreSame: boolean) {
+        this._backgroundAnalysis?.markAllFilesDirty(evenIfContentsAreSame);
+        this._program.markAllFilesDirty(evenIfContentsAreSame);
     }
 
-    markFilesDirty(filePaths: string[], evenIfContentsAreSame: boolean, indexingNeeded = true) {
-        this._backgroundAnalysis?.markFilesDirty(filePaths, evenIfContentsAreSame, indexingNeeded);
-        this._program.markFilesDirty(filePaths, evenIfContentsAreSame, indexingNeeded);
+    markFilesDirty(filePaths: string[], evenIfContentsAreSame: boolean) {
+        this._backgroundAnalysis?.markFilesDirty(filePaths, evenIfContentsAreSame);
+        this._program.markFilesDirty(filePaths, evenIfContentsAreSame);
     }
 
     setCompletionCallback(callback?: AnalysisCompleteCallback) {
@@ -160,23 +160,20 @@ export class BackgroundAnalysisProgram {
         }
     }
 
-    startIndexing(indexOptions: IndexOptions) {
-        this._backgroundAnalysis?.startIndexing(
-            indexOptions,
-            this._configOptions,
-            this.importResolver,
-            this.host.kind,
-            this._getIndices()
-        );
+    startIndexing() {
+        if (!this._configOptions.indexing) {
+            return;
+        }
+
+        this._backgroundAnalysis?.startIndexing(this._configOptions, this.host.kind, this._getIndices());
     }
 
     refreshIndexing() {
-        this._backgroundAnalysis?.refreshIndexing(
-            this._configOptions,
-            this.importResolver,
-            this.host.kind,
-            this._indices
-        );
+        if (!this._configOptions.indexing) {
+            return;
+        }
+
+        this._backgroundAnalysis?.refreshIndexing(this._configOptions, this.host.kind, this._indices);
     }
 
     cancelIndexing() {
@@ -209,19 +206,19 @@ export class BackgroundAnalysisProgram {
         return this._program.writeTypeStub(targetImportPath, targetIsSingleFile, stubPath, token);
     }
 
-    invalidateAndForceReanalysis(rebuildUserFileIndexing: boolean, rebuildLibraryIndexing: boolean) {
+    invalidateAndForceReanalysis(rebuildLibraryIndexing: boolean) {
         if (rebuildLibraryIndexing) {
             this.refreshIndexing();
         }
 
-        this._backgroundAnalysis?.invalidateAndForceReanalysis(rebuildUserFileIndexing);
+        this._backgroundAnalysis?.invalidateAndForceReanalysis();
 
         // Make sure the import resolver doesn't have invalid
         // cached entries.
         this._importResolver.invalidateCache();
 
         // Mark all files with one or more errors dirty.
-        this._program.markAllFilesDirty(true, rebuildUserFileIndexing);
+        this._program.markAllFilesDirty(true);
     }
 
     restart() {

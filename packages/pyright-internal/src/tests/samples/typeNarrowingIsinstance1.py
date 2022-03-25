@@ -1,6 +1,6 @@
 # This sample exercises the type analyzer's isinstance type narrowing logic.
 
-from typing import List, Optional, Sized, Type, TypeVar, Union, Any
+from typing import List, Literal, Optional, Sized, Type, TypeVar, Union, Any
 
 
 class UnrelatedClass:
@@ -120,14 +120,12 @@ def func6(ty: Type[T]) -> Type[T]:
 # Test the handling of protocol classes that support runtime checking.
 def func7(a: Union[List[int], int]):
     if isinstance(a, Sized):
-        reveal_type(a, expected_text="List[int]")
+        t1: Literal["List[int]"] = reveal_type(a)
     else:
-        reveal_type(a, expected_text="int")
-
+        t2: Literal["int"] = reveal_type(a)
 
 # Test handling of member access expressions whose types change based
 # on isinstance checks.
-
 
 class Base1:
     ...
@@ -145,8 +143,8 @@ class Sub2(Base1):
 
 def handler(node: Base1) -> Any:
     if isinstance(node, Sub1):
-        reveal_type(node.value, expected_text="str")
+        t1: Literal["str"] = reveal_type(node.value)
     elif isinstance(node, Sub2):
-        reveal_type(node.value, expected_text="Base1")
+        t2: Literal["Base1"] = reveal_type(node.value)
         if isinstance(node.value, Sub1):
-            reveal_type(node.value, expected_text="Sub1")
+            t3: Literal["Sub1"] = reveal_type(node.value)

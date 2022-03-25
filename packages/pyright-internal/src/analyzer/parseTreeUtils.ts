@@ -52,8 +52,6 @@ export const enum PrintExpressionFlags {
     ForwardDeclarations = 1 << 0,
 }
 
-// Returns the depth of the node as measured from the root
-// of the parse tree.
 export function getNodeDepth(node: ParseNode): number {
     let depth = 0;
     let curNode: ParseNode | undefined = node;
@@ -95,12 +93,6 @@ export function findNodeByOffset(node: ParseNode, offset: number): ParseNode | u
         if (child) {
             const containingChild = findNodeByOffset(child, offset);
             if (containingChild) {
-                // For augmented assignments, prefer the dest expression, which is a clone
-                // of the left expression but is used to hold the type of the operation result.
-                if (node.nodeType === ParseNodeType.AugmentedAssignment && containingChild === node.leftExpression) {
-                    return node.destExpression;
-                }
-
                 return containingChild;
             }
         }
@@ -195,12 +187,6 @@ export function printExpression(node: ExpressionNode, flags = PrintExpressionFla
 
         case ParseNodeType.Number: {
             let value = node.value.toString();
-
-            // If it's stored as a bigint, strip off the "n".
-            if (value.endsWith('n')) {
-                value = value.substring(0, value.length - 1);
-            }
-
             if (node.isImaginary) {
                 value += 'j';
             }
@@ -338,10 +324,10 @@ export function printExpression(node: ExpressionNode, flags = PrintExpressionFla
                 listStr = `${keyStr}: ${valueStr}`;
             }
 
-            listStr =
+            return (
                 listStr +
                 ' ' +
-                node.forIfNodes
+                node.comprehensions
                     .map((expr) => {
                         if (expr.nodeType === ParseNodeType.ListComprehensionFor) {
                             return (
@@ -353,9 +339,8 @@ export function printExpression(node: ExpressionNode, flags = PrintExpressionFla
                             return `if ${printExpression(expr.testExpression, flags)}`;
                         }
                     })
-                    .join(' ');
-
-            return node.isParenthesized ? `(${listStr}})` : listStr;
+                    .join(' ')
+            );
         }
 
         case ParseNodeType.Slice: {
@@ -572,21 +557,15 @@ export function getEnclosingClassOrModule(node: ParseNode, stopAtFunction = fals
 
 export function getEnclosingFunction(node: ParseNode): FunctionNode | undefined {
     let curNode = node.parent;
-    let prevNode: ParseNode | undefined;
-
     while (curNode) {
         if (curNode.nodeType === ParseNodeType.Function) {
-            // Don't treat a decorator as being "enclosed" in the function.
-            if (!curNode.decorators.some((decorator) => decorator === prevNode)) {
-                return curNode;
-            }
+            return curNode;
         }
 
         if (curNode.nodeType === ParseNodeType.Class) {
             return undefined;
         }
 
-        prevNode = curNode;
         curNode = curNode.parent;
     }
 
@@ -696,7 +675,6 @@ export function getEvaluationNodeForAssignmentExpression(
 // a symbol referenced in the specified node.
 export function getEvaluationScopeNode(node: ParseNode): EvaluationScopeNode {
     let prevNode: ParseNode | undefined;
-    let prevPrevNode: ParseNode | undefined;
     let curNode: ParseNode | undefined = node;
     let isParamNameNode = false;
 
@@ -749,31 +727,14 @@ export function getEvaluationScopeNode(node: ParseNode): EvaluationScopeNode {
                 break;
             }
 
-            case ParseNodeType.ListComprehension: {
-                if (getScope(curNode) !== undefined) {
-                    // The iterable expression of the first subnode of a list comprehension
-                    // is evaluated within the scope of its parent.
-                    const isFirstIterableExpr =
-                        prevNode === curNode.forIfNodes[0] &&
-                        curNode.forIfNodes[0].nodeType === ParseNodeType.ListComprehensionFor &&
-                        curNode.forIfNodes[0].iterableExpression === prevPrevNode;
-
-                    if (!isFirstIterableExpr) {
-                        return curNode;
-                    }
-                }
-                break;
-            }
-
+            case ParseNodeType.ListComprehension:
             case ParseNodeType.Module: {
                 if (getScope(curNode) !== undefined) {
                     return curNode;
                 }
-                break;
             }
         }
 
-        prevPrevNode = prevNode;
         prevNode = curNode;
         curNode = curNode.parent;
     }
@@ -914,32 +875,12 @@ export function isNodeContainedWithin(node: ParseNode, potentialContainer: Parse
     return false;
 }
 
-export function getParentNodeOfType(node: ParseNode, containerType: ParseNodeType): ParseNode | undefined {
-    let curNode: ParseNode | undefined = node;
-    while (curNode) {
-        if (curNode.nodeType === containerType) {
-            return curNode;
-        }
-
-        curNode = curNode.parent;
-    }
-
-    return undefined;
-}
-
-export function isNodeContainedWithinNodeType(node: ParseNode, containerType: ParseNodeType): boolean {
-    return getParentNodeOfType(node, containerType) !== undefined;
-}
-
 export function isSuiteEmpty(node: SuiteNode): boolean {
-    let sawEllipsis = false;
-
     for (const statement of node.statements) {
         if (statement.nodeType === ParseNodeType.StatementList) {
             for (const substatement of statement.statements) {
                 if (substatement.nodeType === ParseNodeType.Ellipsis) {
                     // Allow an ellipsis
-                    sawEllipsis = true;
                 } else if (substatement.nodeType === ParseNodeType.StringList) {
                     // Allow doc strings
                 } else {
@@ -951,7 +892,7 @@ export function isSuiteEmpty(node: SuiteNode): boolean {
         }
     }
 
-    return sawEllipsis;
+    return true;
 }
 
 export function isMatchingExpression(reference: ExpressionNode, expression: ExpressionNode): boolean {
@@ -984,8 +925,8 @@ export function isMatchingExpression(reference: ExpressionNode, expression: Expr
             return false;
         }
 
-        const expr = reference.items[0].valueExpression;
-        if (expr.nodeType === ParseNodeType.Number) {
+        if (reference.items[0].valueExpression.nodeType === ParseNodeType.Number) {
+            const referenceNumberNode = reference.items[0].valueExpression;
             const subscriptNode = expression.items[0].valueExpression;
             if (
                 subscriptNode.nodeType !== ParseNodeType.Number ||
@@ -995,30 +936,11 @@ export function isMatchingExpression(reference: ExpressionNode, expression: Expr
                 return false;
             }
 
-            return expr.value === subscriptNode.value;
+            return referenceNumberNode.value === subscriptNode.value;
         }
 
-        if (
-            expr.nodeType === ParseNodeType.UnaryOperation &&
-            expr.operator === OperatorType.Subtract &&
-            expr.expression.nodeType === ParseNodeType.Number
-        ) {
-            const subscriptNode = expression.items[0].valueExpression;
-            if (
-                subscriptNode.nodeType !== ParseNodeType.UnaryOperation ||
-                subscriptNode.operator !== OperatorType.Subtract ||
-                subscriptNode.expression.nodeType !== ParseNodeType.Number ||
-                subscriptNode.expression.isImaginary ||
-                !subscriptNode.expression.isInteger
-            ) {
-                return false;
-            }
-
-            return expr.expression.value === subscriptNode.expression.value;
-        }
-
-        if (expr.nodeType === ParseNodeType.StringList) {
-            const referenceStringListNode = expr;
+        if (reference.items[0].valueExpression.nodeType === ParseNodeType.StringList) {
+            const referenceStringListNode = reference.items[0].valueExpression;
             const subscriptNode = expression.items[0].valueExpression;
             if (
                 referenceStringListNode.strings.length === 1 &&
@@ -1393,17 +1315,6 @@ export class NameNodeWalker extends ParseTreeWalker {
         this._baseExpression = prevBaseExpression;
 
         return false;
-    }
-}
-
-export class CallNodeWalker extends ParseTreeWalker {
-    constructor(private _callback: (node: CallNode) => void) {
-        super();
-    }
-
-    override visitCall(node: CallNode) {
-        this._callback(node);
-        return true;
     }
 }
 

@@ -1,7 +1,7 @@
 from distutils.cmd import Command as Command
 from distutils.dist import Distribution as Distribution
 from distutils.extension import Extension as Extension
-from typing import Any, Mapping
+from typing import Any, Mapping, Type
 
 def setup(
     *,
@@ -20,14 +20,14 @@ def setup(
     scripts: list[str] = ...,
     ext_modules: list[Extension] = ...,
     classifiers: list[str] = ...,
-    distclass: type[Distribution] = ...,
+    distclass: Type[Distribution] = ...,
     script_name: str = ...,
     script_args: list[str] = ...,
     options: Mapping[str, Any] = ...,
     license: str = ...,
     keywords: list[str] | str = ...,
     platforms: list[str] | str = ...,
-    cmdclass: Mapping[str, type[Command]] = ...,
+    cmdclass: Mapping[str, Type[Command]] = ...,
     data_files: list[tuple[str, list[str]]] = ...,
     package_dir: Mapping[str, str] = ...,
     obsoletes: list[str] = ...,

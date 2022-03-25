@@ -13,7 +13,6 @@ class MerchantAccount(Resource):
         Active: str
         Pending: str
         Suspended: str
-
     class FundingDestination:
         Bank: str
         Email: str

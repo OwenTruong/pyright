@@ -1,8 +1,6 @@
-from typing import Any, Generic, TypeVar, overload
+from typing import Any
 
-_T = TypeVar("_T", str, bytes)
-
-class Formatter(Generic[_T]):
+class Formatter:
     name: Any
     aliases: Any
     filenames: Any
@@ -12,11 +10,6 @@ class Formatter(Generic[_T]):
     title: Any
     encoding: Any
     options: Any
-    @overload
-    def __init__(self: Formatter[str], *, encoding: None = ..., outencoding: None = ..., **options) -> None: ...
-    @overload
-    def __init__(self: Formatter[bytes], *, encoding: str, outencoding: None = ..., **options) -> None: ...
-    @overload
-    def __init__(self: Formatter[bytes], *, encoding: None = ..., outencoding: str, **options) -> None: ...
+    def __init__(self, **options) -> None: ...
     def get_style_defs(self, arg: str = ...): ...
     def format(self, tokensource, outfile): ...

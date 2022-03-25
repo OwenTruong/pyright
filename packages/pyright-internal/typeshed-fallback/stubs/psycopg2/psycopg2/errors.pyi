@@ -1,4 +1,17 @@
-from psycopg2._psycopg import Error as Error, Warning as Warning
+from typing import Any
+
+class Error:
+    def __init__(self, *args, **kwargs): ...
+    args: Any
+    cursor: Any
+    diag: Any
+    pgcode: Any
+    pgerror: Any
+    with_traceback: Any
+
+class Warning:
+    args: Any
+    with_traceback: Any
 
 class DatabaseError(Error): ...
 class InterfaceError(Error): ...

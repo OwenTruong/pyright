@@ -35,7 +35,7 @@ def overloaded1(x: Union[A, B]) -> Union[str, B]:
 
 def func1(a: Union[A, B], b: Union[A, B, C]):
     v1 = overloaded1(a)
-    reveal_type(v1, expected_text="str | B")
+    t1: Literal["str | B"] = reveal_type(v1)
 
     # This should generate an error because C is not allowed
     # for the first argument.
@@ -78,12 +78,12 @@ def overloaded2(
 
 def func2(a: LargeUnion, b: Literal[2, 3, 4], c: Literal[2, 3, 4, 9, 10]):
     v1 = overloaded2("a", 2)
-    reveal_type(v1, expected_text="str")
+    t1: Literal["str"] = reveal_type(v1)
 
     v2 = overloaded2(a, b)
-    reveal_type(v2, expected_text="str | float")
+    t2: Literal["str | float"] = reveal_type(v2)
 
     # This should generate an error because the expansion of union types
     # will exceed the max number of expansions (64).
     v3 = overloaded2(a, c)
-    reveal_type(v2, expected_text="str | float")
+    t2: Literal["str | float"] = reveal_type(v2)

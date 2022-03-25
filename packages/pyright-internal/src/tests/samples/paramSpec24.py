@@ -4,22 +4,18 @@
 
 from __future__ import annotations
 from typing_extensions import Self, Concatenate, ParamSpec
-from typing import Any, Callable, TypeVar, Protocol, Generic, overload
+from typing import Any, Callable, Literal, TypeVar, Protocol, Generic, overload
 
-T = TypeVar("T")
+T = TypeVar("T", covariant=True)
 O = TypeVar("O")
 P = ParamSpec("P")
 
 
 class _callable_cache(Protocol[P, T]):
-    foo: int = 0
-    val: T
-
-    def __init__(self, val: T) -> None:
-        self.val = val
+    foo: int
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
-        return self.val
+        ...
 
 
 class _wrapped_cache(_callable_cache[P, T], Generic[O, P, T]):
@@ -55,13 +51,13 @@ class A:
         ...
 
 
-reveal_type(not_in_class, expected_text="_wrapped_cache[Any, (a: int, b: str), str]")
+t1: Literal["_wrapped_cache[Any, (a: int, b: str), str]"] = reveal_type(not_in_class)
 not_in_class(1, "")
 
 a = A()
 
-reveal_type(a.in_class, expected_text="_wrapped_cache[A, (a: int, b: str), str]")
+t2: Literal["_wrapped_cache[A, (a: int, b: str), str]"] = reveal_type(a.in_class)
 a.in_class(1, "")
 
-reveal_type(A.in_class, expected_text="_callable_cache[(A, a: int, b: str), str]")
+t3: Literal["_callable_cache[(A, a: int, b: str), str]"] = reveal_type(A.in_class)
 A.in_class(a, 1, "")

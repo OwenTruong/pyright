@@ -1,11 +1,9 @@
 from email.message import Message
 from email.mime.base import MIMEBase
 from email.policy import Policy
-from typing import Sequence, Union
+from typing import Optional, Sequence, Tuple, Union
 
-__all__ = ["MIMEMultipart"]
-
-_ParamsType = Union[str, None, tuple[str, str | None, str]]
+_ParamsType = Union[str, None, Tuple[str, Optional[str], str]]
 
 class MIMEMultipart(MIMEBase):
     def __init__(

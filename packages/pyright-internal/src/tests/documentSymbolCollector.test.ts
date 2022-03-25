@@ -423,7 +423,7 @@ function verifyReferencesAtPosition(
     const decls = DocumentSymbolCollector.getDeclarationsForNode(
         node as NameNode,
         program.evaluator!,
-        /* resolveLocalName */ true,
+        /*resolveLocalName*/ true,
         CancellationToken.None,
         program.test_createSourceMapper(configOption.findExecEnvironment(fileName))
     );
@@ -436,8 +436,7 @@ function verifyReferencesAtPosition(
             program.evaluator!,
             CancellationToken.None,
             program.getBoundSourceFile(rangeFileName)!.getParseResults()!.parseTree,
-            /* treatModuleInImportAndFromImportSame */ true,
-            /* skipUnreachableCode */ false
+            /*treatModuleInImportAndFromImportSame*/ true
         );
 
         const results = collector.collect();

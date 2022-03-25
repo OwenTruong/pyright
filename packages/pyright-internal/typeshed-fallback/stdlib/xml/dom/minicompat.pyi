@@ -1,19 +1,17 @@
-from typing import Any, Iterable, TypeVar
-
-__all__ = ["NodeList", "EmptyNodeList", "StringTypes", "defproperty"]
+from typing import Any, Iterable, List, Tuple, Type, TypeVar
 
 _T = TypeVar("_T")
 
-StringTypes: tuple[type[str]]
+StringTypes: tuple[Type[str]]
 
-class NodeList(list[_T]):
+class NodeList(List[_T]):
     length: int
     def item(self, index: int) -> _T | None: ...
 
-class EmptyNodeList(tuple[Any, ...]):
+class EmptyNodeList(Tuple[Any, ...]):
     length: int
     def item(self, index: int) -> None: ...
-    def __add__(self, other: Iterable[_T]) -> NodeList[_T]: ...  # type: ignore[override]
+    def __add__(self, other: Iterable[_T]) -> NodeList[_T]: ...  # type: ignore
     def __radd__(self, other: Iterable[_T]) -> NodeList[_T]: ...
 
-def defproperty(klass: type[Any], name: str, doc: str) -> None: ...
+def defproperty(klass: Type[Any], name: str, doc: str) -> None: ...

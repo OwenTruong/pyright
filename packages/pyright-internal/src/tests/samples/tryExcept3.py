@@ -7,6 +7,6 @@ exc: Type[Exception] = Exception
 
 
 try:
-    v = 1 / 0
+    1 / 0
 except exc:
     print("exc")

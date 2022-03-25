@@ -54,12 +54,6 @@ test('CallbackProtocol7', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
-test('CallbackProtocol8', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['callbackProtocol8.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
 test('Assignment1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['assignment1.py']);
 
@@ -112,12 +106,6 @@ test('Assignment9', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['assignment9.py']);
 
     TestUtils.validateResults(analysisResults, 1);
-});
-
-test('Assignment10', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['assignment10.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
 });
 
 test('AugmentedAssignment1', () => {
@@ -174,29 +162,6 @@ test('Super6', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
-test('Super7', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['super7.py']);
-
-    TestUtils.validateResults(analysisResults, 3);
-});
-
-test('Super8', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['super8.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
-test('MissingSuper1', () => {
-    const configOptions = new ConfigOptions('.');
-
-    const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['missingSuper1.py'], configOptions);
-    TestUtils.validateResults(analysisResults1, 0);
-
-    configOptions.diagnosticRuleSet.reportMissingSuperCall = 'error';
-    const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['missingSuper1.py'], configOptions);
-    TestUtils.validateResults(analysisResults2, 4);
-});
-
 test('NewType1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['newType1.py']);
 
@@ -237,15 +202,9 @@ test('isInstance2', () => {
 });
 
 test('isInstance3', () => {
-    const configOptions = new ConfigOptions('.');
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['isinstance3.py']);
 
-    configOptions.defaultPythonVersion = PythonVersion.V3_9;
-    const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['isinstance3.py'], configOptions);
-    TestUtils.validateResults(analysisResults1, 4);
-
-    configOptions.defaultPythonVersion = PythonVersion.V3_10;
-    const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['isinstance3.py'], configOptions);
-    TestUtils.validateResults(analysisResults2, 1);
+    TestUtils.validateResults(analysisResults, 3);
 });
 
 test('isInstance4', () => {
@@ -329,13 +288,7 @@ test('Assert1', () => {
 test('RevealedType1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['revealedType1.py']);
 
-    TestUtils.validateResults(analysisResults, 2, 0, 7);
-});
-
-test('AssertType1', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['assertType1.py']);
-
-    TestUtils.validateResults(analysisResults, 11);
+    TestUtils.validateResults(analysisResults, 0, 0, 3);
 });
 
 test('NameBindings1', () => {
@@ -621,7 +574,7 @@ test('GenericTypes41', () => {
 test('GenericTypes42', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes42.py']);
 
-    TestUtils.validateResults(analysisResults, 1);
+    TestUtils.validateResults(analysisResults, 2);
 });
 
 test('GenericTypes43', () => {
@@ -797,87 +750,15 @@ test('GenericTypes71', () => {
 
     configOptions.diagnosticRuleSet.strictParameterNoneValue = false;
     let analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes71.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 4);
+    TestUtils.validateResults(analysisResults, 3);
 
     configOptions.diagnosticRuleSet.strictParameterNoneValue = true;
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes71.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 5);
+    TestUtils.validateResults(analysisResults, 4);
 });
 
 test('GenericTypes72', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes72.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
-test('GenericTypes73', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes73.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
-test('GenericTypes74', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes74.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
-test('GenericTypes75', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes75.py']);
-
-    TestUtils.validateResults(analysisResults, 1);
-});
-
-test('GenericTypes76', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes76.py']);
-
-    TestUtils.validateResults(analysisResults, 5);
-});
-
-test('GenericTypes77', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes77.py']);
-
-    TestUtils.validateResults(analysisResults, 1);
-});
-
-test('GenericTypes78', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes78.py']);
-
-    TestUtils.validateResults(analysisResults, 1);
-});
-
-test('GenericTypes79', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes79.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
-test('GenericTypes80', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes80.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
-test('GenericTypes81', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes81.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
-test('GenericTypes82', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes82.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
-test('GenericTypes83', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes83.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
-test('GenericTypes84', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['genericTypes84.py']);
 
     TestUtils.validateResults(analysisResults, 0);
 });
@@ -1010,50 +891,6 @@ test('Protocol21', () => {
     TestUtils.validateResults(analysisResults, 1);
 });
 
-test('Protocol22', () => {
-    const configOptions = new ConfigOptions('.');
-    configOptions.diagnosticRuleSet.reportInvalidTypeVarUse = 'error';
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['protocol22.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
-test('Protocol23', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['protocol23.py']);
-
-    TestUtils.validateResults(analysisResults, 2);
-});
-
-test('Protocol24', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['protocol24.py']);
-
-    TestUtils.validateResults(analysisResults, 2);
-});
-
-test('Protocol25', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['protocol25.py']);
-
-    TestUtils.validateResults(analysisResults, 1);
-});
-
-test('Protocol26', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['protocol26.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
-test('Protocol27', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['protocol27.py']);
-
-    TestUtils.validateResults(analysisResults, 3);
-});
-
-test('Protocol28', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['protocol28.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
 test('TypedDict1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDict1.py']);
 
@@ -1093,7 +930,7 @@ test('TypedDict6', () => {
 test('TypedDict7', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDict7.py']);
 
-    TestUtils.validateResults(analysisResults, 2);
+    TestUtils.validateResults(analysisResults, 0);
 });
 
 test('TypedDict8', () => {
@@ -1123,7 +960,7 @@ test('TypedDict11', () => {
 test('TypedDict12', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDict12.py']);
 
-    TestUtils.validateResults(analysisResults, 3);
+    TestUtils.validateResults(analysisResults, 0);
 });
 
 test('TypedDict13', () => {
@@ -1140,18 +977,6 @@ test('TypedDict14', () => {
 
 test('TypedDict15', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDict15.py']);
-
-    TestUtils.validateResults(analysisResults, 2);
-});
-
-test('TypedDict16', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDict16.py']);
-
-    TestUtils.validateResults(analysisResults, 9);
-});
-
-test('TypedDict17', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['typedDict17.py']);
 
     TestUtils.validateResults(analysisResults, 2);
 });

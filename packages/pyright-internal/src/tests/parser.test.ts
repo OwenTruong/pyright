@@ -73,18 +73,6 @@ test('ExpressionWrappedInParens', () => {
     assert.equal(statementList.statements[0].length, 3);
 });
 
-test('MaxParseDepth1', () => {
-    const diagSink = new DiagnosticSink();
-    TestUtils.parseSampleFile('maxParseDepth1.py', diagSink);
-    assert.strictEqual(diagSink.getErrors().length, 1);
-});
-
-test('MaxParseDepth2', () => {
-    const diagSink = new DiagnosticSink();
-    TestUtils.parseSampleFile('maxParseDepth2.py', diagSink);
-    assert.strictEqual(diagSink.getErrors().length, 4);
-});
-
 test('ModuleName range', () => {
     const code = `
 //// from [|/*marker*/...|] import A

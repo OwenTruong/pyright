@@ -36,7 +36,6 @@ import { ImportResolver, ImportResolverFactory } from '../../../analyzer/importR
 import { findNodeByOffset } from '../../../analyzer/parseTreeUtils';
 import { Program } from '../../../analyzer/program';
 import { AnalyzerService, configFileNames } from '../../../analyzer/service';
-import { appendArray } from '../../../common/collectionUtils';
 import { ConfigOptions } from '../../../common/configOptions';
 import { ConsoleInterface, NullConsole } from '../../../common/console';
 import { Comparison, isNumber, isString, toBoolean } from '../../../common/core';
@@ -94,7 +93,7 @@ export interface TextChange {
 export interface HostSpecificFeatures {
     importResolverFactory: ImportResolverFactory;
 
-    runIndexer(workspace: WorkspaceServiceInstance, noStdLib: boolean, options?: string): void;
+    runIndexer(workspace: WorkspaceServiceInstance, noStdLib: boolean): void;
     getCodeActionsForPosition(
         workspace: WorkspaceServiceInstance,
         filePath: string,
@@ -194,21 +193,13 @@ export class TestState {
         const indexer = toBoolean(testData.globalOptions[GlobalMetadataOptionNames.indexer]);
         const indexerWithoutStdLib = toBoolean(testData.globalOptions[GlobalMetadataOptionNames.indexerWithoutStdLib]);
         if (indexer || indexerWithoutStdLib) {
-            const indexerOptions = testData.globalOptions[GlobalMetadataOptionNames.indexerOptions];
             configOptions.indexing = true;
-            this._hostSpecificFeatures.runIndexer(this.workspace, indexerWithoutStdLib, indexerOptions);
+            this._hostSpecificFeatures.runIndexer(this.workspace, indexerWithoutStdLib);
         }
 
         if (this._files.length > 0) {
             // Open the first file by default
             this.openFile(this._files[0]);
-        }
-
-        for (const filePath of this._files) {
-            const file = files[filePath] as vfs.File;
-            if (file.meta?.[MetadataOptionNames.ipythonMode]) {
-                this.program.getSourceFile(filePath)?.test_enableIPythonMode(true);
-            }
         }
     }
 
@@ -325,7 +316,7 @@ export class TestState {
     goToPosition(positionOrLineAndColumn: number | Position) {
         const pos = isNumber(positionOrLineAndColumn)
             ? positionOrLineAndColumn
-            : this.convertPositionToOffset(this.activeFile.fileName, positionOrLineAndColumn);
+            : this._convertPositionToOffset(this.activeFile.fileName, positionOrLineAndColumn);
         this.currentCaretPosition = pos;
         this.selectionEnd = -1;
     }
@@ -354,7 +345,7 @@ export class TestState {
     }
 
     selectLine(index: number) {
-        const lineStart = this.convertPositionToOffset(this.activeFile.fileName, { line: index, character: 0 });
+        const lineStart = this._convertPositionToOffset(this.activeFile.fileName, { line: index, character: 0 });
         const lineEnd = lineStart + this._getLineContent(index).length;
         this.selectRange({ fileName: this.activeFile.fileName, pos: lineStart, end: lineEnd });
     }
@@ -476,8 +467,8 @@ export class TestState {
     }
 
     deleteLineRange(startIndex: number, endIndexInclusive: number) {
-        const startPos = this.convertPositionToOffset(this.activeFile.fileName, { line: startIndex, character: 0 });
-        const endPos = this.convertPositionToOffset(this.activeFile.fileName, {
+        const startPos = this._convertPositionToOffset(this.activeFile.fileName, { line: startIndex, character: 0 });
+        const endPos = this._convertPositionToOffset(this.activeFile.fileName, {
             line: endIndexInclusive + 1,
             character: 0,
         });
@@ -644,9 +635,7 @@ export class TestState {
 
     async verifyCodeActions(
         map: {
-            [marker: string]: {
-                codeActions: { title: string; kind: string; command?: Command; edit?: WorkspaceEdit[] }[];
-            };
+            [marker: string]: { codeActions: { title: string; kind: string; command: Command }[] };
         },
         verifyCodeActionCount?: boolean
     ): Promise<any> {
@@ -670,14 +659,11 @@ export class TestState {
             }
 
             for (const expected of map[name].codeActions) {
-                let expectedCommand: Command | undefined;
-                if (expected.command) {
-                    expectedCommand = {
-                        title: expected.command.title,
-                        command: expected.command.command,
-                        arguments: convertToString(expected.command.arguments),
-                    };
-                }
+                const expectedCommand = {
+                    title: expected.command.title,
+                    command: expected.command.command,
+                    arguments: convertToString(expected.command.arguments),
+                };
 
                 const matches = codeActions.filter((a) => {
                     const actualCommand = a.command
@@ -688,13 +674,10 @@ export class TestState {
                           }
                         : undefined;
 
-                    const actualEdit = a.edit;
-
                     return (
                         a.title === expected.title &&
                         a.kind! === expected.kind &&
-                        this._deepEqual(actualCommand, expectedCommand) &&
-                        this._deepEqual(actualEdit, expected.edit)
+                        this._deepEqual(actualCommand, expectedCommand)
                     );
                 });
 
@@ -1062,7 +1045,7 @@ export class TestState {
             const expectedCompletions = map[markerName].completions;
             const completionPosition = this.convertOffsetToPosition(filePath, marker.position);
 
-            const options = { format: docFormat, snippet: true, lazyEdit: true, autoImport: true };
+            const options = { format: docFormat, snippet: true, lazyEdit: true };
             const nameMap = abbrMap ? new Map<string, AbbreviationInfo>(Object.entries(abbrMap)) : undefined;
             const result = await this.workspace.serviceInstance.getCompletionsForPosition(
                 filePath,
@@ -1087,13 +1070,7 @@ export class TestState {
                 for (let i = 0; i < expectedCompletions.length; i++) {
                     const expected = expectedCompletions[i];
                     const actualIndex = result.completionList.items.findIndex(
-                        (a) =>
-                            a.label === expected.label &&
-                            (expected.kind ? a.kind === expected.kind : true) &&
-                            (expected.detail ? a.detail === expected.detail : true) &&
-                            (expected.documentation && MarkupContent.is(a.documentation)
-                                ? a.documentation.value === expected.documentation
-                                : true)
+                        (a) => a.label === expected.label && (expected.kind ? a.kind === expected.kind : true)
                     );
                     if (actualIndex >= 0) {
                         if (verifyMode === 'excluded') {
@@ -1299,7 +1276,7 @@ export class TestState {
                 fileName,
                 position,
                 true,
-                (locs) => appendArray(actual, locs),
+                (locs) => actual.push(...locs),
                 CancellationToken.None
             );
 
@@ -1381,34 +1358,6 @@ export class TestState {
 
             for (const r of expected) {
                 assert.equal(actual?.filter((d) => this._deepEqual(d, r)).length, 1);
-            }
-        }
-    }
-
-    verifyFindTypeDefinitions(map: {
-        [marker: string]: {
-            definitions: DocumentRange[];
-        };
-    }) {
-        this._analyze();
-
-        for (const marker of this.getMarkers()) {
-            const fileName = marker.fileName;
-            const name = this.getMarkerName(marker);
-
-            if (!(name in map)) {
-                continue;
-            }
-
-            const expected = map[name].definitions;
-
-            const position = this.convertOffsetToPosition(fileName, marker.position);
-            const actual = this.program.getTypeDefinitionsForPosition(fileName, position, CancellationToken.None);
-
-            assert.strictEqual(actual?.length ?? 0, expected.length, name);
-
-            for (const r of expected) {
-                assert.strictEqual(actual?.filter((d) => this._deepEqual(d, r)).length, 1, name);
             }
         }
     }
@@ -1506,7 +1455,7 @@ export class TestState {
         return files[0].content;
     }
 
-    protected convertPositionToOffset(fileName: string, position: Position): number {
+    private _convertPositionToOffset(fileName: string, position: Position): number {
         const lines = this._getTextRangeCollection(fileName);
         return convertPositionToOffset(position, lines)!;
     }
@@ -1616,7 +1565,7 @@ export class TestState {
         }
     }
 
-    protected _rangeText({ fileName, pos, end }: Range): string {
+    private _rangeText({ fileName, pos, end }: Range): string {
         return this._getFileContent(fileName).slice(pos, end);
     }
 
@@ -1654,7 +1603,7 @@ export class TestState {
 
     private _getLineContent(index: number) {
         const text = this._getFileContent(this.activeFile.fileName);
-        const pos = this.convertPositionToOffset(this.activeFile.fileName, { line: index, character: 0 });
+        const pos = this._convertPositionToOffset(this.activeFile.fileName, { line: index, character: 0 });
         let startPos = pos;
         let endPos = pos;
 
@@ -1819,12 +1768,10 @@ export class TestState {
         // directly set files to track rather than using fileSpec from config
         // to discover those files from file system
         service.test_program.setTrackedFiles(
-            this._files
-                .filter((path) => {
-                    const fileExtension = getFileExtension(path).toLowerCase();
-                    return fileExtension === '.py' || fileExtension === '.pyi';
-                })
-                .filter((path) => service.isTracked(path))
+            this._files.filter((path) => {
+                const fileExtension = getFileExtension(path).toLowerCase();
+                return fileExtension === '.py' || fileExtension === '.pyi';
+            })
         );
 
         return service;

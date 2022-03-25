@@ -25,7 +25,7 @@ import {
     MarkupKind,
 } from 'vscode-languageserver-types';
 
-import { BackgroundAnalysisBase, IndexOptions } from '../backgroundAnalysisBase';
+import { BackgroundAnalysisBase } from '../backgroundAnalysisBase';
 import { CancellationProvider, DefaultCancellationProvider } from '../common/cancellationUtils';
 import { CommandLineOptions } from '../common/commandLineOptions';
 import { ConfigOptions } from '../common/configOptions';
@@ -54,7 +54,7 @@ import {
 } from '../common/pathUtils';
 import { DocumentRange, Position, Range } from '../common/textRange';
 import { timingStats } from '../common/timing';
-import { AbbreviationMap, CompletionOptions, CompletionResultsList } from '../languageService/completionProvider';
+import { AbbreviationMap, CompletionOptions, CompletionResults } from '../languageService/completionProvider';
 import { DefinitionFilter } from '../languageService/definitionProvider';
 import { IndexResults, WorkspaceSymbolCallback } from '../languageService/documentSymbolProvider';
 import { HoverResults } from '../languageService/hoverProvider';
@@ -76,10 +76,6 @@ const _userActivityBackoffTimeInMs = 250;
 
 const _gitDirectory = normalizeSlashes('/.git/');
 const _includeFileRegex = /\.pyi?$/;
-
-// How long since the last library activity should we wait until
-// re-analyzing the libraries? (10min)
-const _libraryActivityBackoffTimeInMs = 60 * 1000 * 10;
 
 export class AnalyzerService {
     private _hostFactory: HostFactory;
@@ -238,34 +234,14 @@ export class AnalyzerService {
         return false;
     }
 
-    setFileOpened(
-        path: string,
-        version: number | null,
-        contents: string,
-        ipythonMode = false,
-        chainedFilePath?: string
-    ) {
-        this._backgroundAnalysisProgram.setFileOpened(path, version, contents, {
-            isTracked: this.isTracked(path),
-            ipythonMode,
-            chainedFilePath,
-        });
-        this._scheduleReanalysis(/*requireTrackedFileUpdate*/ false);
+    setFileOpened(path: string, version: number | null, contents: string) {
+        this._backgroundAnalysisProgram.setFileOpened(path, version, contents, this.isTracked(path));
+        this._scheduleReanalysis(false);
     }
 
-    updateOpenFileContents(
-        path: string,
-        version: number | null,
-        contents: TextDocumentContentChangeEvent[],
-        ipythonMode = false,
-        chainedFilePath?: string
-    ) {
-        this._backgroundAnalysisProgram.updateOpenFileContents(path, version, contents, {
-            isTracked: this.isTracked(path),
-            ipythonMode,
-            chainedFilePath,
-        });
-        this._scheduleReanalysis(/*requireTrackedFileUpdate*/ false);
+    updateOpenFileContents(path: string, version: number | null, contents: TextDocumentContentChangeEvent[]) {
+        this._backgroundAnalysisProgram.updateOpenFileContents(path, version, contents, this.isTracked(path));
+        this._scheduleReanalysis(false);
     }
 
     test_setIndexing(
@@ -275,8 +251,8 @@ export class AnalyzerService {
         this._backgroundAnalysisProgram.test_setIndexing(workspaceIndices, libraryIndices);
     }
 
-    startIndexing(indexOptions: IndexOptions) {
-        this._backgroundAnalysisProgram.startIndexing(indexOptions);
+    startIndexing() {
+        this._backgroundAnalysisProgram.startIndexing();
     }
 
     setFileClosed(path: string) {
@@ -320,14 +296,6 @@ export class AnalyzerService {
         token: CancellationToken
     ): DocumentRange[] | undefined {
         return this._program.getDefinitionsForPosition(filePath, position, filter, token);
-    }
-
-    getTypeDefinitionForPosition(
-        filePath: string,
-        position: Position,
-        token: CancellationToken
-    ): DocumentRange[] | undefined {
-        return this._program.getTypeDefinitionsForPosition(filePath, position, token);
     }
 
     reportReferencesForPosition(
@@ -381,7 +349,7 @@ export class AnalyzerService {
         options: CompletionOptions,
         nameMap: AbbreviationMap | undefined,
         token: CancellationToken
-    ): Promise<CompletionResultsList | undefined> {
+    ): Promise<CompletionResults | undefined> {
         return this._program.getCompletionsForPosition(
             filePath,
             position,
@@ -425,15 +393,6 @@ export class AnalyzerService {
 
     renameModule(filePath: string, newFilePath: string, token: CancellationToken): FileEditAction[] | undefined {
         return this._program.renameModule(filePath, newFilePath, token);
-    }
-
-    canRenameSymbolAtPosition(
-        filePath: string,
-        position: Position,
-        isDefaultWorkspace: boolean,
-        token: CancellationToken
-    ): Range | undefined {
-        return this._program.canRenameSymbolAtPosition(filePath, position, isDefaultWorkspace, token);
     }
 
     renameSymbolAtPosition(
@@ -579,7 +538,7 @@ export class AnalyzerService {
         }
 
         const configOptions = new ConfigOptions(projectRoot, this._typeCheckingMode);
-        const defaultExcludes = ['**/node_modules', '**/__pycache__', '**/.*'];
+        const defaultExcludes = ['**/node_modules', '**/__pycache__', '.git'];
 
         if (commandLineOptions.pythonPath) {
             this._console.info(
@@ -809,17 +768,13 @@ export class AnalyzerService {
     // This is called after a new type stub has been created. It allows
     // us to invalidate caches and force reanalysis of files that potentially
     // are affected by the appearance of a new type stub.
-    invalidateAndForceReanalysis(
-        rebuildUserFileIndexing = true,
-        rebuildLibraryIndexing = true,
-        updateTrackedFileList = false
-    ) {
+    invalidateAndForceReanalysis(rebuildLibraryIndexing = true, updateTrackedFileList = false) {
         if (updateTrackedFileList) {
             this._updateTrackedFileList(/* markFilesDirtyUnconditionally */ false);
         }
 
         // Mark all files with one or more errors dirty.
-        this._backgroundAnalysisProgram.invalidateAndForceReanalysis(rebuildUserFileIndexing, rebuildLibraryIndexing);
+        this._backgroundAnalysisProgram.invalidateAndForceReanalysis(rebuildLibraryIndexing);
     }
 
     // Forces the service to stop all analysis, discard all its caches,
@@ -1286,16 +1241,7 @@ export class AnalyzerService {
                         if (!isTemporaryFile) {
                             // Added/deleted/renamed files impact imports,
                             // clear the import resolver cache and reanalyze everything.
-                            //
-                            // Here we don't need to rebuild any indexing since this kind of change can't affect
-                            // indices. For library, since the changes are on workspace files, it won't affect library
-                            // indices. For user file, since user file indices don't contains import alias symbols,
-                            // it won't affect those indices. we only need to rebuild user file indices when symbols
-                            // defined in the file are changed. ex) user modified the file.
-                            this.invalidateAndForceReanalysis(
-                                /* rebuildUserFileIndexing */ false,
-                                /* rebuildLibraryIndexing */ false
-                            );
+                            this.invalidateAndForceReanalysis(/* rebuildLibraryIndexing */ false);
                             this._scheduleReanalysis(/* requireTrackedFileUpdate */ true);
                         }
                     }
@@ -1343,7 +1289,7 @@ export class AnalyzerService {
                     }
 
                     if (this._verboseOutput) {
-                        this._console.info(`LibraryFile: Received fs event '${event}' for path '${path}'`);
+                        this._console.info(`LibraryFile: Received fs event '${event}' for path '${path}'}'`);
                     }
 
                     if (isIgnored(path)) {
@@ -1382,9 +1328,9 @@ export class AnalyzerService {
 
             // Invalidate import resolver, mark all files dirty unconditionally,
             // and reanalyze.
-            this.invalidateAndForceReanalysis(/* rebuildUserFileIndexing */ false);
+            this.invalidateAndForceReanalysis();
             this._scheduleReanalysis(false);
-        }, _libraryActivityBackoffTimeInMs);
+        }, 1000);
     }
 
     private _removeConfigFileWatcher() {

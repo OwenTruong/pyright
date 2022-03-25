@@ -1,5 +1,4 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import ImageFile
 
@@ -12,8 +11,8 @@ def DQT(self, marker) -> None: ...
 MARKER: Any
 
 class JpegImageFile(ImageFile):
-    format: ClassVar[Literal["JPEG", "MPO"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
     def load_read(self, read_bytes): ...
     mode: Any
     tile: Any

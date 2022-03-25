@@ -15,11 +15,3 @@ c.__doc__
 def func1(a: Optional[int]):
     a.__class__
     a.__doc__
-
-
-def func2(x: type[None]):
-    ...
-
-
-func2(None.__class__)
-func2(type(None))

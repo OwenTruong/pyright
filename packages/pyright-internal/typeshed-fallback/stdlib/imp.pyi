@@ -1,7 +1,7 @@
 import types
 from _typeshed import StrPath
 from os import PathLike
-from typing import IO, Any, Protocol
+from typing import IO, Any, Protocol, TypeVar
 
 from _imp import (
     acquire_lock as acquire_lock,
@@ -14,6 +14,8 @@ from _imp import (
     lock_held as lock_held,
     release_lock as release_lock,
 )
+
+_T = TypeVar("_T")
 
 SEARCH_ERROR: int
 PY_SOURCE: int

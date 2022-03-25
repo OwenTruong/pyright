@@ -1,6 +1,7 @@
 # See the README.md file in this directory for more information.
 
-from typing import Any, Protocol
+from typing import Any
+from typing_extensions import Protocol
 
 # As defined https://docs.python.org/3/library/xml.dom.html#domimplementation-objects
 class DOMImplementation(Protocol):

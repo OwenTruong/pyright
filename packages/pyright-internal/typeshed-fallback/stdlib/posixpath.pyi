@@ -16,47 +16,6 @@ from genericpath import (
 from os import PathLike
 from typing import AnyStr, Sequence, overload
 
-__all__ = [
-    "normcase",
-    "isabs",
-    "join",
-    "splitdrive",
-    "split",
-    "splitext",
-    "basename",
-    "dirname",
-    "commonprefix",
-    "getsize",
-    "getmtime",
-    "getatime",
-    "getctime",
-    "islink",
-    "exists",
-    "lexists",
-    "isdir",
-    "isfile",
-    "ismount",
-    "expanduser",
-    "expandvars",
-    "normpath",
-    "abspath",
-    "samefile",
-    "sameopenfile",
-    "samestat",
-    "curdir",
-    "pardir",
-    "sep",
-    "pathsep",
-    "defpath",
-    "altsep",
-    "extsep",
-    "devnull",
-    "realpath",
-    "supports_unicode_filenames",
-    "relpath",
-    "commonpath",
-]
-
 supports_unicode_filenames: bool
 # aliases (also in os)
 curdir: str
@@ -101,14 +60,10 @@ def normpath(path: AnyStr) -> AnyStr: ...
 def commonpath(paths: Sequence[StrPath]) -> str: ...
 @overload
 def commonpath(paths: Sequence[BytesPath]) -> bytes: ...
-
-# First parameter is not actually pos-only,
-# but must be defined as pos-only in the stub or cross-platform code doesn't type-check,
-# as the parameter name is different in ntpath.join()
 @overload
-def join(__a: StrPath, *paths: StrPath) -> str: ...
+def join(a: StrPath, *paths: StrPath) -> str: ...
 @overload
-def join(__a: BytesPath, *paths: BytesPath) -> bytes: ...
+def join(a: BytesPath, *paths: BytesPath) -> bytes: ...
 
 if sys.version_info >= (3, 10):
     @overload

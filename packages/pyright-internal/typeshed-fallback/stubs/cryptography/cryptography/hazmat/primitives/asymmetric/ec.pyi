@@ -1,4 +1,3 @@
-from _typeshed import Self
 from abc import ABCMeta, abstractmethod
 from typing import ClassVar
 
@@ -93,7 +92,7 @@ class SECT571R1(EllipticCurve):
     key_size: int = ...
     name: str = ...
 
-class EllipticCurveOID:
+class EllipticCurveOID(object):
     SECP192R1: ClassVar[ObjectIdentifier]
     SECP224R1: ClassVar[ObjectIdentifier]
     SECP256K1: ClassVar[ObjectIdentifier]
@@ -136,7 +135,7 @@ class EllipticCurvePrivateKeyWithSerialization(EllipticCurvePrivateKey):
     @abstractmethod
     def private_numbers(self) -> EllipticCurvePrivateNumbers: ...
 
-class EllipticCurvePrivateNumbers:
+class EllipticCurvePrivateNumbers(object):
     @property
     def private_value(self) -> int: ...
     @property
@@ -166,7 +165,7 @@ class EllipticCurvePublicKey(metaclass=ABCMeta):
 
 EllipticCurvePublicKeyWithSerialization = EllipticCurvePublicKey
 
-class EllipticCurvePublicNumbers:
+class EllipticCurvePublicNumbers(object):
     @property
     def curve(self) -> EllipticCurve: ...
     @property
@@ -175,7 +174,7 @@ class EllipticCurvePublicNumbers:
     def y(self) -> int: ...
     def __init__(self, x: int, y: int, curve: EllipticCurve) -> None: ...
     @classmethod
-    def from_encoded_point(cls: type[Self], curve: EllipticCurve, data: bytes) -> Self: ...
+    def from_encoded_point(cls, curve: EllipticCurve, data: bytes) -> EllipticCurvePublicNumbers: ...
     def public_key(self, backend: EllipticCurveBackend | None = ...) -> EllipticCurvePublicKey: ...
 
 class EllipticCurveSignatureAlgorithm(metaclass=ABCMeta):
@@ -183,7 +182,7 @@ class EllipticCurveSignatureAlgorithm(metaclass=ABCMeta):
     @abstractmethod
     def algorithm(self) -> HashAlgorithm | Prehashed: ...
 
-class ECDH: ...
+class ECDH(object): ...
 
 class ECDSA(EllipticCurveSignatureAlgorithm):
     def __init__(self, algorithm: HashAlgorithm | Prehashed): ...

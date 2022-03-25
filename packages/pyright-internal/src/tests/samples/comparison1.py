@@ -1,7 +1,7 @@
 # This sample tests the check for non-overlapping types compared
 # with equals comparison.
 
-from typing import Literal, Optional, TypeVar, Union
+from typing import Literal, TypeVar, Union
 
 
 OS = Literal["Linux", "Darwin", "Windows"]
@@ -62,16 +62,3 @@ def func2(
 
     if b == e:
         return
-
-
-def func3(base: type) -> None:
-    if base == ClassA:
-        ...
-
-    if ClassA == base:
-        ...
-
-def func4(val: Optional[str]):
-    # This should generate an error because there is no overlap in types.
-    if val == 42:
-        ...

@@ -3,6 +3,7 @@
 
 # pyright: reportMissingImports=false
 
+from typing import Literal
 import my_module
 
 
@@ -25,7 +26,7 @@ class Class1:
 
 
 v1 = Class1(1, 2, 3)
-reveal_type(v1, expected_text="Class1")
+t1: Literal["Class1"] = reveal_type(v1)
 
 
 @my_decorator
@@ -34,4 +35,4 @@ def func1() -> int:
 
 
 v2 = func1()
-reveal_type(v2, expected_text="int")
+t2: Literal["int"] = reveal_type(v2)

@@ -2,8 +2,6 @@ import socket
 from _typeshed import Self
 from typing import Any, Callable, Match, Pattern, Sequence
 
-__all__ = ["Telnet"]
-
 DEBUGLEVEL: int
 TELNET_PORT: int
 

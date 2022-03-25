@@ -1,7 +1,7 @@
 # This sample tests the inference of types relating to
 # "yield from" statements.
 
-from typing import Generator
+from typing import Generator, Literal
 
 
 class Yielder:
@@ -21,5 +21,5 @@ def collect1() -> Generator[str, None, bool]:
 def collect2():
     y = Yielder()
     z = yield from y
-    reveal_type(z, expected_text="bool")
+    t_z: Literal["bool"] = reveal_type(z)
     return z

@@ -2,6 +2,9 @@
 # a function does not propagate beyond that function to callers.
 
 
+from typing import Literal
+
+
 def func1():
     # This should generate an error
     return a
@@ -9,7 +12,7 @@ def func1():
 
 # This should not.
 b = func1()
-reveal_type(b, expected_text="Unknown")
+tb1: Literal["Unknown"] = reveal_type(b)
 
 
 def func2(val: int):
@@ -22,4 +25,4 @@ def func2(val: int):
 
 # This should not.
 c = func2(36)
-reveal_type(c, expected_text="int | Unknown")
+tc1: Literal["int | Unknown"] = reveal_type(c)

@@ -72,6 +72,6 @@ e = None
 if 1:
     e = 4
 
-v1 = e + 4
-v2 = e < 5
-v3 = not e
+e + 4
+e < 5
+not e

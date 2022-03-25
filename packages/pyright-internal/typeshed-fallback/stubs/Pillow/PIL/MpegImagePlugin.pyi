@@ -1,5 +1,4 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import ImageFile
 
@@ -14,5 +13,5 @@ class BitStream:
     def read(self, bits): ...
 
 class MpegImageFile(ImageFile):
-    format: ClassVar[Literal["MPEG"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str

@@ -1,10 +1,8 @@
 import sys
 from typing import Any
-from typing_extensions import final
 
 class Str: ...
 
-@final
 class Xxo:
     def demo(self) -> None: ...
 
@@ -17,5 +15,4 @@ if sys.version_info >= (3, 10):
 else:
     class error: ...
     class Null: ...
-
     def roj(__b: Any) -> None: ...

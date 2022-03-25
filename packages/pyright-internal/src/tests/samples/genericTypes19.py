@@ -6,7 +6,7 @@
 # no "unknown" types remaining in this file.
 # pyright: strict
 
-from typing import Generic, TypeVar
+from typing import Generic, Literal, TypeVar
 
 _A = TypeVar("_A")
 _B = TypeVar("_B")
@@ -28,5 +28,5 @@ class Foo(Generic[_A, _B]):
 
 foo = Foo(27)
 
-reveal_type(foo.value_a, expected_text="int")
-reveal_type(foo.value_b, expected_text="str")
+t_a: Literal["int"] = reveal_type(foo.value_a)
+t_b: Literal["str"] = reveal_type(foo.value_b)

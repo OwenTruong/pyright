@@ -1,7 +1,7 @@
 # This sample tests the handling of the "super" call when
 # used with a two-argument form that specifies the "bind to" type.
 
-from typing import Type, TypeVar
+from typing import Literal, Type, TypeVar
 
 
 T = TypeVar("T", bound="A")
@@ -20,10 +20,10 @@ class B(A):
 
 
 a1 = A.factory()
-reveal_type(a1, expected_text="A")
+type_a1: Literal["A"] = reveal_type(a1)
 
 b1 = B.factory()
-reveal_type(b1, expected_text="B")
+type_b1: Literal["B"] = reveal_type(b1)
 
 b2 = B.factoryB()
-reveal_type(b2, expected_text="B")
+type_b2: Literal["B"] = reveal_type(b2)

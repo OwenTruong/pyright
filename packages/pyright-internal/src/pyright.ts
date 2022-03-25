@@ -53,7 +53,6 @@ interface PyrightJsonResults {
 
 interface PyrightSymbolCount {
     withKnownType: number;
-    withAmbiguousType: number;
     withUnknownType: number;
 }
 
@@ -81,7 +80,6 @@ interface PyrightPublicSymbolReport {
     name: string;
     referenceCount: number;
     isTypeKnown: boolean;
-    isTypeAmbiguous: boolean;
     isExported: boolean;
     diagnostics: PyrightJsonDiagnostic[];
     alternateNames?: string[] | undefined;
@@ -169,15 +167,8 @@ async function processArgs(): Promise<ExitStatus> {
         return ExitStatus.NoErrors;
     }
 
-    for (const [arg, value] of Object.entries(args)) {
-        if (value === null) {
-            console.error(`'${arg}' option requires a value`);
-            return ExitStatus.ParameterError;
-        }
-    }
-
     if (args.outputjson) {
-        const incompatibleArgs = ['stats', 'verbose', 'createstub', 'dependencies'];
+        const incompatibleArgs = ['watch', 'stats', 'verbose', 'createstub', 'dependencies'];
         for (const arg of incompatibleArgs) {
             if (args[arg] !== undefined) {
                 console.error(`'outputjson' option cannot be used with '${arg}' option`);
@@ -448,12 +439,10 @@ function buildTypeCompletenessReport(packageName: string, completenessReport: Pa
         pyTypedPath: completenessReport.pyTypedPath,
         exportedSymbolCounts: {
             withKnownType: 0,
-            withAmbiguousType: 0,
             withUnknownType: 0,
         },
         otherSymbolCounts: {
             withKnownType: 0,
-            withAmbiguousType: 0,
             withUnknownType: 0,
         },
         missingFunctionDocStringCount: completenessReport.missingFunctionDocStringCount,
@@ -481,7 +470,6 @@ function buildTypeCompletenessReport(packageName: string, completenessReport: Pa
             referenceCount: symbol.referenceCount,
             isExported: symbol.isExported,
             isTypeKnown: symbol.typeKnownStatus === TypeKnownStatus.Known,
-            isTypeAmbiguous: symbol.typeKnownStatus === TypeKnownStatus.Ambiguous,
             diagnostics: symbol.diagnostics.map((diag) => convertDiagnosticToJson(diag.filePath, diag.diagnostic)),
         };
 
@@ -499,12 +487,6 @@ function buildTypeCompletenessReport(packageName: string, completenessReport: Pa
             } else {
                 report.typeCompleteness!.otherSymbolCounts.withKnownType++;
             }
-        } else if (symbol.typeKnownStatus === TypeKnownStatus.Ambiguous) {
-            if (symbol.isExported) {
-                report.typeCompleteness!.exportedSymbolCounts.withAmbiguousType++;
-            } else {
-                report.typeCompleteness!.otherSymbolCounts.withAmbiguousType++;
-            }
         } else {
             if (symbol.isExported) {
                 report.typeCompleteness!.exportedSymbolCounts.withUnknownType++;
@@ -515,10 +497,8 @@ function buildTypeCompletenessReport(packageName: string, completenessReport: Pa
     });
 
     const unknownSymbolCount = report.typeCompleteness.exportedSymbolCounts.withUnknownType;
-    const ambiguousSymbolCount = report.typeCompleteness.exportedSymbolCounts.withAmbiguousType;
     const knownSymbolCount = report.typeCompleteness.exportedSymbolCounts.withKnownType;
-    const totalSymbolCount = unknownSymbolCount + ambiguousSymbolCount + knownSymbolCount;
-
+    const totalSymbolCount = unknownSymbolCount + knownSymbolCount;
     if (totalSymbolCount > 0) {
         report.typeCompleteness!.completenessScore = knownSymbolCount / totalSymbolCount;
     }
@@ -550,7 +530,7 @@ function printTypeCompletenessReportText(results: PyrightJsonResults, verboseOut
     // Print list of all symbols.
     if (completenessReport.symbols.length > 0 && verboseOutput) {
         console.log('');
-        console.log(`Exported symbols: ${completenessReport.symbols.filter((sym) => sym.isExported).length}`);
+        console.log(`Exported symbols: ${completenessReport.symbols.length}`);
         completenessReport.symbols.forEach((symbol) => {
             if (symbol.isExported) {
                 const refCount = symbol.referenceCount > 1 ? ` (${symbol.referenceCount} references)` : '';
@@ -559,7 +539,7 @@ function printTypeCompletenessReportText(results: PyrightJsonResults, verboseOut
         });
 
         console.log('');
-        console.log(`Other referenced symbols: ${completenessReport.symbols.filter((sym) => !sym.isExported).length}`);
+        console.log(`Other referenced symbols: ${completenessReport.symbols.length}`);
         completenessReport.symbols.forEach((symbol) => {
             if (!symbol.isExported) {
                 const refCount = symbol.referenceCount > 1 ? ` (${symbol.referenceCount} references)` : '';
@@ -594,13 +574,11 @@ function printTypeCompletenessReportText(results: PyrightJsonResults, verboseOut
     console.log(
         `Symbols exported by "${completenessReport.packageName}": ${
             completenessReport.exportedSymbolCounts.withKnownType +
-            completenessReport.exportedSymbolCounts.withAmbiguousType +
             completenessReport.exportedSymbolCounts.withUnknownType
         }`
     );
     console.log(`  With known type: ${completenessReport.exportedSymbolCounts.withKnownType}`);
-    console.log(`  With ambiguous type: ${completenessReport.exportedSymbolCounts.withAmbiguousType}`);
-    console.log(`  With unknown type: ${completenessReport.exportedSymbolCounts.withUnknownType}`);
+    console.log(`  With partially unknown type: ${completenessReport.exportedSymbolCounts.withUnknownType}`);
     if (completenessReport.ignoreUnknownTypesFromImports) {
         console.log(`    (Ignoring unknown types imported from other packages)`);
     }
@@ -610,14 +588,11 @@ function printTypeCompletenessReportText(results: PyrightJsonResults, verboseOut
     console.log('');
     console.log(
         `Other symbols referenced but not exported by "${completenessReport.packageName}": ${
-            completenessReport.otherSymbolCounts.withKnownType +
-            completenessReport.otherSymbolCounts.withAmbiguousType +
-            completenessReport.otherSymbolCounts.withUnknownType
+            completenessReport.otherSymbolCounts.withKnownType + completenessReport.otherSymbolCounts.withUnknownType
         }`
     );
     console.log(`  With known type: ${completenessReport.otherSymbolCounts.withKnownType}`);
-    console.log(`  With ambiguous type: ${completenessReport.otherSymbolCounts.withAmbiguousType}`);
-    console.log(`  With unknown type: ${completenessReport.otherSymbolCounts.withUnknownType}`);
+    console.log(`  With partially unknown type: ${completenessReport.otherSymbolCounts.withUnknownType}`);
     console.log('');
     console.log(`Type completeness score: ${Math.round(completenessReport.completenessScore * 1000) / 10}%`);
     console.log('');
@@ -749,7 +724,7 @@ function reportDiagnosticsAsText(fileDiagnostics: FileDiagnostics[]): Diagnostic
     console.log(
         `${errorCount.toString()} ${errorCount === 1 ? 'error' : 'errors'}, ` +
             `${warningCount.toString()} ${warningCount === 1 ? 'warning' : 'warnings'}, ` +
-            `${informationCount.toString()} ${informationCount === 1 ? 'information' : 'informations'} `
+            `${informationCount.toString()} ${informationCount === 1 ? 'info' : 'infos'} `
     );
 
     return {
@@ -780,7 +755,7 @@ function logDiagnosticToConsole(diag: PyrightJsonDiagnostic, prefix = '  ') {
             ? chalk.red('error')
             : diag.severity === 'warning'
             ? chalk.cyan('warning')
-            : chalk.blue('information');
+            : chalk.blue('info');
     message += `: ${firstLine}`;
     if (remainingLines.length > 0) {
         message += '\n' + prefix + remainingLines.join('\n' + prefix);

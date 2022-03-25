@@ -1,13 +1,12 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import ImageFile
 
 SUPPORTED: bool
 
 class WebPImageFile(ImageFile):
-    format: ClassVar[Literal["WEBP"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
     def seek(self, frame) -> None: ...
     fp: Any
     tile: Any

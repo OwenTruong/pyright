@@ -1,9 +1,7 @@
 import sys
-from typing import BinaryIO
+from typing import BinaryIO, Union
 
-__all__ = ["Error", "encode", "decode"]
-
-_File = str | BinaryIO
+_File = Union[str, BinaryIO]
 
 class Error(Exception): ...
 

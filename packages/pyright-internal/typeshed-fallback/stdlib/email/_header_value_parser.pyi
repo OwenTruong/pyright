@@ -1,28 +1,29 @@
 import sys
-from _typeshed import Self
 from email.errors import HeaderParseError, MessageDefect
 from email.policy import Policy
-from typing import Any, Iterable, Iterator, Pattern
+from typing import Any, Iterable, Iterator, List, Pattern, Set, Type, TypeVar, Union
 from typing_extensions import Final
 
-WSP: Final[set[str]]
-CFWS_LEADER: Final[set[str]]
-SPECIALS: Final[set[str]]
-ATOM_ENDS: Final[set[str]]
-DOT_ATOM_ENDS: Final[set[str]]
-PHRASE_ENDS: Final[set[str]]
-TSPECIALS: Final[set[str]]
-TOKEN_ENDS: Final[set[str]]
-ASPECIALS: Final[set[str]]
-ATTRIBUTE_ENDS: Final[set[str]]
-EXTENDED_ATTRIBUTE_ENDS: Final[set[str]]
+_T = TypeVar("_T")
+
+WSP: Final[Set[str]]
+CFWS_LEADER: Final[Set[str]]
+SPECIALS: Final[Set[str]]
+ATOM_ENDS: Final[Set[str]]
+DOT_ATOM_ENDS: Final[Set[str]]
+PHRASE_ENDS: Final[Set[str]]
+TSPECIALS: Final[Set[str]]
+TOKEN_ENDS: Final[Set[str]]
+ASPECIALS: Final[Set[str]]
+ATTRIBUTE_ENDS: Final[Set[str]]
+EXTENDED_ATTRIBUTE_ENDS: Final[Set[str]]
 
 def quote_string(value: Any) -> str: ...
 
 if sys.version_info >= (3, 7):
     rfc2047_matcher: Pattern[str]
 
-class TokenList(list[TokenList | Terminal]):
+class TokenList(List[Union[TokenList, Terminal]]):
     token_type: str | None
     syntactic_break: bool
     ew_combine_allowed: bool
@@ -181,14 +182,10 @@ class InvalidMailbox(TokenList):
     token_type: str
     @property
     def display_name(self) -> None: ...
-    @property
-    def local_part(self) -> None: ...
-    @property
-    def domain(self) -> None: ...
-    @property
-    def route(self) -> None: ...
-    @property
-    def addr_spec(self) -> None: ...
+    local_part: None
+    domain: None
+    route: None
+    addr_spec: None
 
 class Domain(TokenList):
     token_type: str
@@ -316,10 +313,8 @@ if sys.version_info >= (3, 8):
         token_type: str
         as_ew_allowed: bool
         def fold(self, policy: Policy) -> str: ...
-
     class MessageID(MsgID):
         token_type: str
-
     class InvalidMessageID(MessageID):
         token_type: str
 
@@ -332,14 +327,14 @@ class Terminal(str):
     syntactic_break: bool
     token_type: str
     defects: list[MessageDefect]
-    def __new__(cls: type[Self], value: str, token_type: str) -> Self: ...
+    def __new__(cls: Type[_T], value: str, token_type: str) -> _T: ...
     def pprint(self) -> None: ...
     @property
     def all_defects(self) -> list[MessageDefect]: ...
     def pop_trailing_ws(self) -> None: ...
     @property
     def comments(self) -> list[str]: ...
-    def __getnewargs__(self) -> tuple[str, str]: ...  # type: ignore[override]
+    def __getnewargs__(self) -> tuple[str, str]: ...  # type: ignore
 
 class WhiteSpaceTerminal(Terminal):
     @property

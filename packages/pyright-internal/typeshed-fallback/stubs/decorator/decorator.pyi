@@ -1,11 +1,9 @@
 import sys
-from typing import Any, Callable, Iterator, NamedTuple, Pattern, Text, TypeVar
-from typing_extensions import ParamSpec
+from typing import Any, Callable, Iterator, NamedTuple, Pattern, Text, Tuple, TypeVar
 
 _C = TypeVar("_C", bound=Callable[..., Any])
 _Func = TypeVar("_Func", bound=Callable[..., Any])
 _T = TypeVar("_T")
-_P = ParamSpec("_P")
 
 def get_init(cls: type) -> None: ...
 
@@ -16,7 +14,7 @@ else:
         args: list[str]
         varargs: str | None
         varkw: str | None
-        defaults: tuple[Any, ...]
+        defaults: Tuple[Any, ...]
         kwonlyargs: list[str]
         kwonlydefaults: dict[str, Any]
         annotations: dict[str, Any]
@@ -32,11 +30,11 @@ DEF: Pattern[str]
 
 _dict = dict  # conflicts with attribute name
 
-class FunctionMaker:
+class FunctionMaker(object):
     args: list[Text]
     varargs: Text | None
     varkw: Text | None
-    defaults: tuple[Any, ...]
+    defaults: Tuple[Any, ...]
     kwonlyargs: list[Text]
     kwonlydefaults: Text | None
     shortsignature: Text | None
@@ -51,7 +49,7 @@ class FunctionMaker:
         func: Callable[..., Any] | None = ...,
         name: Text | None = ...,
         signature: Text | None = ...,
-        defaults: tuple[Any, ...] | None = ...,
+        defaults: Tuple[Any, ...] | None = ...,
         doc: Text | None = ...,
         module: Text | None = ...,
         funcdict: _dict[Text, Any] | None = ...,
@@ -66,7 +64,7 @@ class FunctionMaker:
         obj: Any,
         body: Text,
         evaldict: _dict[Text, Any],
-        defaults: tuple[Any, ...] | None = ...,
+        defaults: Tuple[Any, ...] | None = ...,
         doc: Text | None = ...,
         module: Text | None = ...,
         addsource: bool = ...,
@@ -81,5 +79,5 @@ def decorator(
 class ContextManager(_GeneratorContextManager[_T]):
     def __call__(self, func: _C) -> _C: ...
 
-def contextmanager(func: Callable[_P, Iterator[_T]]) -> Callable[_P, ContextManager[_T]]: ...
+def contextmanager(func: Callable[..., Iterator[_T]]) -> Callable[..., ContextManager[_T]]: ...
 def dispatch_on(*dispatch_args: Any) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...

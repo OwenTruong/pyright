@@ -130,8 +130,8 @@ class sconn(NamedTuple):
     fd: int
     family: AddressFamily
     type: SocketKind
-    laddr: addr | tuple[()]
-    raddr: addr | tuple[()]
+    laddr: str
+    raddr: str
     status: str
     pid: int
 

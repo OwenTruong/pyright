@@ -3,13 +3,13 @@
 
 # pyright: reportUnnecessaryIsInstance=true
 
-from typing import Any, Iterable, Sized
+from typing import Any, Iterable, Literal, Sized
 
 
 def f(v: Any) -> bool:
     if isinstance(v, Iterable):
-        reveal_type(v, expected_text="Iterable[Unknown]")
+        t_v1: Literal["Iterable[Unknown]"] = reveal_type(v)
         if isinstance(v, Sized):
-            reveal_type(v, expected_text="<subclass of Iterable and Sized>")
+            t_v2: Literal["<subclass of Iterable and Sized>"] = reveal_type(v)
             return True
     return False

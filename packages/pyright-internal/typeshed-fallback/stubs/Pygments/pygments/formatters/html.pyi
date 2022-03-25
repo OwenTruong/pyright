@@ -1,10 +1,8 @@
-from typing import Any, TypeVar
+from typing import Any
 
 from pygments.formatter import Formatter
 
-_T = TypeVar("_T", str, bytes)
-
-class HtmlFormatter(Formatter[_T]):
+class HtmlFormatter(Formatter):
     name: str
     aliases: Any
     filenames: Any
@@ -32,6 +30,7 @@ class HtmlFormatter(Formatter[_T]):
     linespans: Any
     anchorlinenos: Any
     hl_lines: Any
+    def __init__(self, **options) -> None: ...
     def get_style_defs(self, arg: Any | None = ...): ...
     def get_token_style_defs(self, arg: Any | None = ...): ...
     def get_background_style_defs(self, arg: Any | None = ...): ...

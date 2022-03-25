@@ -6,184 +6,184 @@ from typing import Any, Generic, List, Literal, Protocol, Tuple, TypeVar, Union
 def test_unknown(value_to_match):
     match value_to_match:
         case a1, a2:
-            reveal_type(a1, expected_text="Unknown")
-            reveal_type(a2, expected_text="Unknown")
+            t_a1: Literal["Unknown"] = reveal_type(a1)
+            t_a2: Literal["Unknown"] = reveal_type(a2)
 
         case *b1, b2:
-            reveal_type(b1, expected_text="list[Unknown]")
-            reveal_type(b2, expected_text="Unknown")
+            t_b1: Literal["list[Unknown]"] = reveal_type(b1)
+            t_b2: Literal["Unknown"] = reveal_type(b2)
 
         case c1, *c2:
-            reveal_type(c1, expected_text="Unknown")
-            reveal_type(c2, expected_text="list[Unknown]")
+            t_c1: Literal["Unknown"] = reveal_type(c1)
+            t_c2: Literal["list[Unknown]"] = reveal_type(c2)
 
         case d1, *d2, d3:
-            reveal_type(d1, expected_text="Unknown")
-            reveal_type(d2, expected_text="list[Unknown]")
-            reveal_type(d3, expected_text="Unknown")
+            t_d1: Literal["Unknown"] = reveal_type(d1)
+            t_d2: Literal["list[Unknown]"] = reveal_type(d2)
+            t_d3: Literal["Unknown"] = reveal_type(d3)
         
         case 3, *e1:
-            reveal_type(e1, expected_text="list[Unknown]")
+            t_e1: Literal["list[Unknown]"] = reveal_type(e1)
        
         case "hi", *f1:
-            reveal_type(f1, expected_text="list[Unknown]")
+            t_f1: Literal["list[Unknown]"] = reveal_type(f1)
        
         case *g1, "hi":
-            reveal_type(g1, expected_text="list[Unknown]")
+            t_g1: Literal["list[Unknown]"] = reveal_type(g1)
 
 
 def test_list(value_to_match: List[str]):
     match value_to_match:
         case a1, a2:
-            reveal_type(a1, expected_text="str")
-            reveal_type(a2, expected_text="str")
-            reveal_type(value_to_match, expected_text="List[str]")
+            t_a1: Literal["str"] = reveal_type(a1)
+            t_a2: Literal["str"] = reveal_type(a2)
+            t_v1: Literal["List[str]"] = reveal_type(value_to_match)
 
         case *b1, b2:
-            reveal_type(b1, expected_text="list[str]")
-            reveal_type(b2, expected_text="str")
-            reveal_type(value_to_match, expected_text="List[str]")
+            t_b1: Literal["list[str]"] = reveal_type(b1)
+            t_b2: Literal["str"] = reveal_type(b2)
+            t_v2: Literal["List[str]"] = reveal_type(value_to_match)
 
         case c1, *c2:
-            reveal_type(c1, expected_text="str")
-            reveal_type(c2, expected_text="list[str]")
-            reveal_type(value_to_match, expected_text="List[str]")
+            t_c1: Literal["str"] = reveal_type(c1)
+            t_c2: Literal["list[str]"] = reveal_type(c2)
+            t_v3: Literal["List[str]"] = reveal_type(value_to_match)
 
         case d1, *d2, d3:
-            reveal_type(d1, expected_text="str")
-            reveal_type(d2, expected_text="list[str]")
-            reveal_type(d3, expected_text="str")
-            reveal_type(value_to_match, expected_text="List[str]")
+            t_d1: Literal["str"] = reveal_type(d1)
+            t_d2: Literal["list[str]"] = reveal_type(d2)
+            t_d3: Literal["str"] = reveal_type(d3)
+            t_v4: Literal["List[str]"] = reveal_type(value_to_match)
         
         case 3, *e1:
-            reveal_type(e1, expected_text="Never")
-            reveal_type(value_to_match, expected_text="Never")
+            t_e1: Literal["Never"] = reveal_type(e1)
+            t_v5: Literal["Never"] = reveal_type(value_to_match)
        
         case "hi", *f1:
-            reveal_type(f1, expected_text="list[str]")
-            reveal_type(value_to_match, expected_text="List[str]")
+            t_f1: Literal["list[str]"] = reveal_type(f1)
+            t_v6: Literal["List[str]"] = reveal_type(value_to_match)
        
         case *g1, "hi":
-            reveal_type(g1, expected_text="list[str]")
-            reveal_type(value_to_match, expected_text="List[str]")
+            t_g1: Literal["list[str]"] = reveal_type(g1)
+            t_v7: Literal["List[str]"] = reveal_type(value_to_match)
 
 def test_open_ended_tuple(value_to_match: Tuple[str, ...]):
     match value_to_match:
         case a1, a2:
-            reveal_type(a1, expected_text="str")
-            reveal_type(a2, expected_text="str")
-            reveal_type(value_to_match, expected_text="tuple[str, str]")
+            t_a1: Literal["str"] = reveal_type(a1)
+            t_a2: Literal["str"] = reveal_type(a2)
+            t_v1: Literal["tuple[str, str]"] = reveal_type(value_to_match)
 
         case *b1, b2:
-            reveal_type(b1, expected_text="list[str]")
-            reveal_type(b2, expected_text="str")
-            reveal_type(value_to_match, expected_text="Tuple[str, ...]")
+            t_b1: Literal["list[str]"] = reveal_type(b1)
+            t_b2: Literal["str"] = reveal_type(b2)
+            t_v2: Literal["Tuple[str, ...]"] = reveal_type(value_to_match)
 
         case c1, *c2:
-            reveal_type(c1, expected_text="str")
-            reveal_type(c2, expected_text="list[str]")
-            reveal_type(value_to_match, expected_text="Tuple[str, ...]")
+            t_c1: Literal["str"] = reveal_type(c1)
+            t_c2: Literal["list[str]"] = reveal_type(c2)
+            t_v3: Literal["Tuple[str, ...]"] = reveal_type(value_to_match)
 
         case d1, *d2, d3:
-            reveal_type(d1, expected_text="str")
-            reveal_type(d2, expected_text="list[str]")
-            reveal_type(d3, expected_text="str")
-            reveal_type(value_to_match, expected_text="Tuple[str, ...]")
+            t_d1: Literal["str"] = reveal_type(d1)
+            t_d2: Literal["list[str]"] = reveal_type(d2)
+            t_d3: Literal["str"] = reveal_type(d3)
+            t_v4: Literal["Tuple[str, ...]"] = reveal_type(value_to_match)
         
         case 3, *e1:
-            reveal_type(e1, expected_text="Never")
-            reveal_type(value_to_match, expected_text="Never")
+            t_e1: Literal["Never"] = reveal_type(e1)
+            t_v5: Literal["Never"] = reveal_type(value_to_match)
        
         case "hi", *f1:
-            reveal_type(f1, expected_text="list[str]")
-            reveal_type(value_to_match, expected_text="Tuple[str, ...]")
+            t_f1: Literal["list[str]"] = reveal_type(f1)
+            t_v6: Literal["Tuple[str, ...]"] = reveal_type(value_to_match)
        
         case *g1, "hi":
-            reveal_type(g1, expected_text="list[str]")
-            reveal_type(value_to_match, expected_text="Tuple[str, ...]")
+            t_g1: Literal["list[str]"] = reveal_type(g1)
+            t_v7: Literal["Tuple[str, ...]"] = reveal_type(value_to_match)
 
 def test_definite_tuple(value_to_match: Tuple[int, str, float, complex]):
     match value_to_match:
-        case a1, a2, a3, a4 if value_to_match[0] == 0:
-            reveal_type(a1, expected_text="int")
-            reveal_type(a2, expected_text="str")
-            reveal_type(a3, expected_text="float")
-            reveal_type(a4, expected_text="complex")
-            reveal_type(value_to_match, expected_text="tuple[int, str, float, complex]")
+        case a1, a2, a3, a4:
+            t_a1: Literal["int"] = reveal_type(a1)
+            t_a2: Literal["str"] = reveal_type(a2)
+            t_a3: Literal["float"] = reveal_type(a3)
+            t_a4: Literal["complex"] = reveal_type(a4)
+            t_v1: Literal["tuple[int, str, float, complex]"] = reveal_type(value_to_match)
 
-        case *b1, b2 if value_to_match[0] == 0:
-            reveal_type(b1, expected_text="list[int | str | float]")
-            reveal_type(b2, expected_text="complex")
-            reveal_type(value_to_match, expected_text="Tuple[int, str, float, complex]")
+        case *b1, b2:
+            t_b1: Literal["list[int | str | float]"] = reveal_type(b1)
+            t_b2: Literal["complex"] = reveal_type(b2)
+            t_v2: Literal["Tuple[int, str, float, complex]"] = reveal_type(value_to_match)
 
-        case c1, *c2 if value_to_match[0] == 0:
-            reveal_type(c1, expected_text="int")
-            reveal_type(c2, expected_text="list[str | float | complex]")
-            reveal_type(value_to_match, expected_text="Tuple[int, str, float, complex]")
+        case c1, *c2:
+            t_c1: Literal["int"] = reveal_type(c1)
+            t_c2: Literal["list[str | float | complex]"] = reveal_type(c2)
+            t_v3: Literal["Tuple[int, str, float, complex]"] = reveal_type(value_to_match)
 
-        case d1, *d2, d3 if value_to_match[0] == 0:
-            reveal_type(d1, expected_text="int")
-            reveal_type(d2, expected_text="list[str | float]")
-            reveal_type(d3, expected_text="complex")
-            reveal_type(value_to_match, expected_text="Tuple[int, str, float, complex]")
+        case d1, *d2, d3:
+            t_d1: Literal["int"] = reveal_type(d1)
+            t_d2: Literal["list[str | float]"] = reveal_type(d2)
+            t_d3: Literal["complex"] = reveal_type(d3)
+            t_v4: Literal["Tuple[int, str, float, complex]"] = reveal_type(value_to_match)
         
         case 3, *e1:
-            reveal_type(e1, expected_text="list[str | float | complex]")
-            reveal_type(value_to_match, expected_text="Tuple[int, str, float, complex]")
+            t_e1: Literal["list[str | float | complex]"] = reveal_type(e1)
+            t_v5: Literal["Tuple[int, str, float, complex]"] = reveal_type(value_to_match)
        
         case "hi", *f1:
-            reveal_type(f1, expected_text="Never")
-            reveal_type(value_to_match, expected_text="Never")
+            t_f1: Literal["Never"] = reveal_type(f1)
+            t_v6: Literal["Never"] = reveal_type(value_to_match)
 
         case *g1, 3j:
-            reveal_type(g1, expected_text="list[int | str | float]")
-            reveal_type(value_to_match, expected_text="Tuple[int, str, float, complex]")
+            t_g1: Literal["list[int | str | float]"] = reveal_type(g1)
+            t_v7: Literal["Tuple[int, str, float, complex]"] = reveal_type(value_to_match)
        
         case *h1, "hi":
-            reveal_type(h1, expected_text="Never")
-            reveal_type(value_to_match, expected_text="Never")
+            t_h1: Literal["Never"] = reveal_type(h1)
+            t_v8: Literal["Never"] = reveal_type(value_to_match)
 
 
 def test_union(value_to_match: Union[Tuple[complex, complex], Tuple[int, str, float, complex], List[str], Tuple[float, ...], Any]):
     match value_to_match:
-        case a1, a2, a3, a4 if value_to_match[0] == 0:
-            reveal_type(a1, expected_text="int | str | float | Any")
-            reveal_type(a2, expected_text="str | float | Any")
-            reveal_type(a3, expected_text="float | str | Any")
-            reveal_type(a4, expected_text="complex | str | float | Any")
-            reveal_type(value_to_match, expected_text="tuple[int, str, float, complex] | List[str] | tuple[float, float, float, float] | Any")
+        case a1, a2, a3, a4:
+            t_a1: Literal["int | str | float | Any"] = reveal_type(a1)
+            t_a2: Literal["str | float | Any"] = reveal_type(a2)
+            t_a3: Literal["float | str | Any"] = reveal_type(a3)
+            t_a4: Literal["complex | str | float | Any"] = reveal_type(a4)
+            t_v1: Literal["tuple[int, str, float, complex] | List[str] | tuple[float, float, float, float] | Any"] = reveal_type(value_to_match)
 
-        case *b1, b2 if value_to_match[0] == 0:
-            reveal_type(b1, expected_text="list[complex] | list[int | str | float] | list[str] | list[float] | list[Any]")
-            reveal_type(b2, expected_text="complex | str | float | Any")
-            reveal_type(value_to_match, expected_text="Tuple[complex, complex] | Tuple[int, str, float, complex] | List[str] | Tuple[float, ...] | Any")
+        case *b1, b2:
+            t_b1: Literal["list[complex] | list[int | str | float] | list[str] | list[float] | list[Any]"] = reveal_type(b1)
+            t_b2: Literal["complex | str | float | Any"] = reveal_type(b2)
+            t_v2: Literal["Tuple[complex, complex] | Tuple[int, str, float, complex] | List[str] | Tuple[float, ...] | Any"] = reveal_type(value_to_match)
 
-        case c1, *c2 if value_to_match[0] == 0:
-            reveal_type(c1, expected_text="complex | int | str | float | Any")
-            reveal_type(c2, expected_text="list[complex] | list[str | float | complex] | list[str] | list[float] | list[Any]")
-            reveal_type(value_to_match, expected_text="Tuple[complex, complex] | Tuple[int, str, float, complex] | List[str] | Tuple[float, ...] | Any")
+        case c1, *c2:
+            t_c1: Literal["complex | int | str | float | Any"] = reveal_type(c1)
+            t_c2: Literal["list[complex] | list[str | float | complex] | list[str] | list[float] | list[Any]"] = reveal_type(c2)
+            t_v3: Literal["Tuple[complex, complex] | Tuple[int, str, float, complex] | List[str] | Tuple[float, ...] | Any"] = reveal_type(value_to_match)
 
-        case d1, *d2, d3 if value_to_match[0] == 0:
-            reveal_type(d1, expected_text="complex | int | str | float | Any")
-            reveal_type(d2, expected_text="list[str | float] | list[str] | list[float] | list[Any]")
-            reveal_type(d3, expected_text="complex | str | float | Any")
-            reveal_type(value_to_match, expected_text="Tuple[complex, complex] | Tuple[int, str, float, complex] | List[str] | Tuple[float, ...] | Any")
+        case d1, *d2, d3:
+            t_d1: Literal["complex | int | str | float | Any"] = reveal_type(d1)
+            t_d2: Literal["list[str | float] | list[str] | list[float] | list[Any]"] = reveal_type(d2)
+            t_d3: Literal["complex | str | float | Any"] = reveal_type(d3)
+            t_v4: Literal["Tuple[complex, complex] | Tuple[int, str, float, complex] | List[str] | Tuple[float, ...] | Any"] = reveal_type(value_to_match)
         
         case 3, e1:
-            reveal_type(e1, expected_text="complex | float | Any")
-            reveal_type(value_to_match, expected_text="tuple[Literal[3], complex] | tuple[Literal[3], float] | Any")
+            t_e1: Literal["complex | float | Any"] = reveal_type(e1)
+            t_v5: Literal["tuple[Literal[3], complex] | tuple[Literal[3], float] | Any"] = reveal_type(value_to_match)
        
         case "hi", *f1:
-            reveal_type(f1, expected_text="list[str] | list[Any]")
-            reveal_type(value_to_match, expected_text="List[str] | Any")
+            t_f1: Literal["list[str] | list[Any]"] = reveal_type(f1)
+            t_v6: Literal["List[str] | Any"] = reveal_type(value_to_match)
        
         case *g1, 3j:
-            reveal_type(g1, expected_text="list[complex] | list[int | str | float] | list[Any]")
-            reveal_type(value_to_match, expected_text="Tuple[complex, complex] | Tuple[int, str, float, complex] | Any")
+            t_g1: Literal["list[complex] | list[int | str | float] | list[Any]"] = reveal_type(g1)
+            t_v7: Literal["Tuple[complex, complex] | Tuple[int, str, float, complex] | Any"] = reveal_type(value_to_match)
        
         case *h1, "hi":
-            reveal_type(h1, expected_text="list[str] | list[Any]")
-            reveal_type(value_to_match, expected_text="List[str] | Any")
+            t_h1: Literal["list[str] | list[Any]"] = reveal_type(h1)
+            t_v8: Literal["List[str] | Any"] = reveal_type(value_to_match)
 
 
 class SupportsLessThan(Protocol):
@@ -196,29 +196,29 @@ SupportsLessThanT = TypeVar("SupportsLessThanT", bound=SupportsLessThan)
 def sort(seq: List[SupportsLessThanT]) -> List[SupportsLessThanT]:
     match seq:
         case [] | [_]:
-            reveal_type(seq, expected_text="List[SupportsLessThanT@sort]")
+            t_v1: Literal["List[SupportsLessThanT@sort]"] = reveal_type(seq)
             return seq
         
         case [x, y] if x <= y:
-            reveal_type(seq, expected_text="List[SupportsLessThanT@sort]")
+            t_v2: Literal["List[SupportsLessThanT@sort]"] = reveal_type(seq)
             return seq
         
         case [x, y]:
-            reveal_type(seq, expected_text="List[SupportsLessThanT@sort]")
+            t_v3: Literal["List[SupportsLessThanT@sort]"] = reveal_type(seq)
             return [y, x]
         
         case [x, y, z] if x <= y <= z:
-            reveal_type(seq, expected_text="List[SupportsLessThanT@sort]")
+            t_v4: Literal["List[SupportsLessThanT@sort]"] = reveal_type(seq)
             return seq
         
         case [x, y, z] if x > y > z:
-            reveal_type(seq, expected_text="List[SupportsLessThanT@sort]")
+            t_v5: Literal["List[SupportsLessThanT@sort]"] = reveal_type(seq)
             return [z, y, x]
         
         case [p, *rest]:
             a = sort([x for x in rest if x <= p])
             b = sort([x for x in rest if p < x])
-            reveal_type(seq, expected_text="List[SupportsLessThanT@sort]")
+            t_v6: Literal["List[SupportsLessThanT@sort]"] = reveal_type(seq)
             return a + [p] + b
     return seq
 
@@ -226,60 +226,60 @@ def sort(seq: List[SupportsLessThanT]) -> List[SupportsLessThanT]:
 def test_exceptions(seq: Union[str, bytes, bytearray]):
     match seq:
         case [x, y]:
-            reveal_type(x, expected_text="Never")
-            reveal_type(y, expected_text="Never")
+            t_v1: Literal["Never"] = reveal_type(x)
+            t_v2: Literal["Never"] = reveal_type(y)
             return seq
 
 def test_object(seq: object):
     match seq:
         case (a1, a2) as a3:
-            reveal_type(a1, expected_text="object")
-            reveal_type(a2, expected_text="object")
-            reveal_type(a3, expected_text="Sequence[object]")
-            reveal_type(seq, expected_text="Sequence[object]")
+            t_a1: Literal["object"] = reveal_type(a1)
+            t_a2: Literal["object"] = reveal_type(a2)
+            t_a3: Literal["Sequence[object]"] = reveal_type(a3)
+            t_va: Literal["Sequence[object]"] = reveal_type(seq)
 
         case (*b1, b2) as b3:
-            reveal_type(b1, expected_text="list[object]")
-            reveal_type(b2, expected_text="object")
-            reveal_type(b3, expected_text="Sequence[object]")
-            reveal_type(seq, expected_text="Sequence[object]")
+            t_b1: Literal["list[object]"] = reveal_type(b1)
+            t_b2: Literal["object"] = reveal_type(b2)
+            t_b3: Literal["Sequence[object]"] = reveal_type(b3)
+            t_vb: Literal["Sequence[object]"] = reveal_type(seq)
 
         case (c1, *c2) as c3:
-            reveal_type(c1, expected_text="object")
-            reveal_type(c2, expected_text="list[object]")
-            reveal_type(c3, expected_text="Sequence[object]")
-            reveal_type(seq, expected_text="Sequence[object]")
+            t_c1: Literal["object"] = reveal_type(c1)
+            t_c2: Literal["list[object]"] = reveal_type(c2)
+            t_c3: Literal["Sequence[object]"] = reveal_type(c3)
+            t_vc: Literal["Sequence[object]"] = reveal_type(seq)
 
         case (d1, *d2, d3) as d4:
-            reveal_type(d1, expected_text="object")
-            reveal_type(d2, expected_text="list[object]")
-            reveal_type(d3, expected_text="object")
-            reveal_type(d4, expected_text="Sequence[object]")
-            reveal_type(seq, expected_text="Sequence[object]")
+            t_d1: Literal["object"] = reveal_type(d1)
+            t_d2: Literal["list[object]"] = reveal_type(d2)
+            t_d3: Literal["object"] = reveal_type(d3)
+            t_d4: Literal["Sequence[object]"] = reveal_type(d4)
+            t_vd: Literal["Sequence[object]"] = reveal_type(seq)
         
         case (3, *e1) as e2:
-            reveal_type(e1, expected_text="list[object]")
-            reveal_type(e2, expected_text="Sequence[object | int]")
-            reveal_type(seq, expected_text="Sequence[object | int]")
+            t_e1: Literal["list[object]"] = reveal_type(e1)
+            t_e2: Literal["Sequence[object | int]"] = reveal_type(e2)
+            t_ve: Literal["Sequence[object | int]"] = reveal_type(seq)
         
         case ("hi", *f1) as f2: 
-            reveal_type(f1, expected_text="list[object]")
-            reveal_type(f2, expected_text="Sequence[object | str]")
-            reveal_type(seq, expected_text="Sequence[object | str]") 
+            t_f1: Literal["list[object]"] = reveal_type(f1)
+            t_f2: Literal["Sequence[object | str]"] = reveal_type(f2)
+            t_vf: Literal["Sequence[object | str]"] = reveal_type(seq) 
        
         case (*g1, "hi") as g2:
-            reveal_type(g1, expected_text="list[object]")
-            reveal_type(g2, expected_text="Sequence[object | str]") 
-            reveal_type(seq, expected_text="Sequence[object | str]") 
+            t_g1: Literal["list[object]"] = reveal_type(g1)
+            t_g2: Literal["Sequence[object | str]"] = reveal_type(g2) 
+            t_vg: Literal["Sequence[object | str]"] = reveal_type(seq) 
 
         case [1, "hi", True] as h1: 
-            reveal_type(h1, expected_text="Sequence[int | str | bool]")
-            reveal_type(seq, expected_text="Sequence[int | str | bool]")
+            t_h1: Literal["Sequence[int | str | bool]"] = reveal_type(h1)
+            t_vh: Literal["Sequence[int | str | bool]"] = reveal_type(seq)
 
         case [1, i1] as i2:
-            reveal_type(i1, expected_text="object")
-            reveal_type(i2, expected_text="Sequence[object | int]") 
-            reveal_type(seq, expected_text="Sequence[object | int]")
+            t_i1: Literal["object"] = reveal_type(i1)
+            t_i2: Literal["Sequence[object | int]"] = reveal_type(i2) 
+            t_vi: Literal["Sequence[object | int]"] = reveal_type(seq)
 
 _T = TypeVar('_T')
 
@@ -309,32 +309,3 @@ def test_illegal_type_alias(m: object):
         # exception at runtime.
         case BOrC(a=i):
             pass
-
-def test_negative_narrowing1(subj: tuple[Literal[0]] | tuple[Literal[1]]):
-    match subj:
-        case (1,*a) | (*a):
-            reveal_type(subj, expected_text="tuple[Literal[1]] | tuple[Literal[0]]")
-            reveal_type(a, expected_text="list[int]")
-
-        case b:
-            reveal_type(subj, expected_text="Never")
-            reveal_type(b, expected_text="Never")
-
-
-def test_negative_narrowing2(subj: tuple[int, ...]):
-    match subj:
-        case (1,*a):
-            reveal_type(subj, expected_text="tuple[int, ...]")
-            reveal_type(a, expected_text="list[int]")
-
-        case (b,):
-            reveal_type(subj, expected_text="tuple[int]")
-            reveal_type(b, expected_text="int")
-
-        case (*c,):
-            reveal_type(subj, expected_text="tuple[int, ...]")
-            reveal_type(c, expected_text="list[int]")
-
-        case d:
-            reveal_type(subj, expected_text="Never")
-            reveal_type(d, expected_text="Never")

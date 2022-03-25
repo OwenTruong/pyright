@@ -1,7 +1,6 @@
 import abc
 import sys
-from _typeshed import Self as TypeshedSelf  # see #6932 for why the alias cannot have a leading underscore
-from typing import (  # noqa Y022
+from typing import (
     TYPE_CHECKING as TYPE_CHECKING,
     Any,
     AsyncContextManager as AsyncContextManager,
@@ -23,6 +22,7 @@ from typing import (  # noqa Y022
     NewType as NewType,
     NoReturn as NoReturn,
     Text as Text,
+    Tuple,
     Type as Type,
     TypeVar,
     ValuesView,
@@ -34,29 +34,19 @@ _T = TypeVar("_T")
 _F = TypeVar("_F", bound=Callable[..., Any])
 _TC = TypeVar("_TC", bound=Type[object])
 
-# unfortunately we have to duplicate this class definition from typing.pyi or we break pytype
 class _SpecialForm:
-    def __getitem__(self, parameters: Any) -> object: ...
-    if sys.version_info >= (3, 10):
-        def __or__(self, other: Any) -> _SpecialForm: ...
-        def __ror__(self, other: Any) -> _SpecialForm: ...
-
-# Do not import (and re-export) Protocol or runtime_checkable from
-# typing module because type checkers need to be able to distinguish
-# typing.Protocol and typing_extensions.Protocol so they can properly
-# warn users about potential runtime exceptions when using typing.Protocol
-# on older versions of Python.
-Protocol: _SpecialForm = ...
+    def __getitem__(self, typeargs: Any) -> Any: ...
 
 def runtime_checkable(cls: _TC) -> _TC: ...
 
 # This alias for above is kept here for backwards compatibility.
 runtime = runtime_checkable
-Final: _SpecialForm
+Protocol: _SpecialForm = ...
+Final: _SpecialForm = ...
 
 def final(f: _F) -> _F: ...
 
-Literal: _SpecialForm
+Literal: _SpecialForm = ...
 
 def IntVar(name: str) -> Any: ...  # returns a new TypeVar
 
@@ -65,7 +55,7 @@ class _TypedDict(Mapping[str, object], metaclass=abc.ABCMeta):
     __required_keys__: frozenset[str]
     __optional_keys__: frozenset[str]
     __total__: bool
-    def copy(self: TypeshedSelf) -> TypeshedSelf: ...
+    def copy(self: _T) -> _T: ...
     # Using NoReturn so that only calls using mypy plugin hook that specialize the signature
     # can go through.
     def setdefault(self, k: NoReturn, default: object) -> object: ...
@@ -78,95 +68,65 @@ class _TypedDict(Mapping[str, object], metaclass=abc.ABCMeta):
     def __delitem__(self, k: NoReturn) -> None: ...
 
 # TypedDict is a (non-subscriptable) special form.
-TypedDict: object
+TypedDict: object = ...
 
 OrderedDict = _Alias()
 
+def get_type_hints(
+    obj: Callable[..., Any],
+    globalns: dict[str, Any] | None = ...,
+    localns: dict[str, Any] | None = ...,
+    include_extras: bool = ...,
+) -> dict[str, Any]: ...
+
 if sys.version_info >= (3, 7):
-    def get_type_hints(
-        obj: Callable[..., Any],
-        globalns: dict[str, Any] | None = ...,
-        localns: dict[str, Any] | None = ...,
-        include_extras: bool = ...,
-    ) -> dict[str, Any]: ...
-    def get_args(tp: Any) -> tuple[Any, ...]: ...
+    def get_args(tp: Any) -> Tuple[Any, ...]: ...
     def get_origin(tp: Any) -> Any | None: ...
 
-Annotated: _SpecialForm
-_AnnotatedAlias: Any  # undocumented
+Annotated: _SpecialForm = ...
+_AnnotatedAlias: Any = ...  # undocumented
 
 @runtime_checkable
 class SupportsIndex(Protocol, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __index__(self) -> int: ...
 
-# New things in 3.10
+# PEP 612 support for Python < 3.9
 if sys.version_info >= (3, 10):
-    from typing import (
-        Concatenate as Concatenate,
-        ParamSpec as ParamSpec,
-        TypeAlias as TypeAlias,
-        TypeGuard as TypeGuard,
-        is_typeddict as is_typeddict,
-    )
+    from typing import Concatenate as Concatenate, ParamSpec as ParamSpec, TypeAlias as TypeAlias, TypeGuard as TypeGuard
 else:
     class ParamSpecArgs:
         __origin__: ParamSpec
         def __init__(self, origin: ParamSpec) -> None: ...
-
     class ParamSpecKwargs:
         __origin__: ParamSpec
         def __init__(self, origin: ParamSpec) -> None: ...
-
     class ParamSpec:
         __name__: str
-        __bound__: type[Any] | None
+        __bound__: Type[Any] | None
         __covariant__: bool
         __contravariant__: bool
         def __init__(
-            self, name: str, *, bound: None | type[Any] | str = ..., contravariant: bool = ..., covariant: bool = ...
+            self, name: str, *, bound: None | Type[Any] | str = ..., contravariant: bool = ..., covariant: bool = ...
         ) -> None: ...
         @property
         def args(self) -> ParamSpecArgs: ...
         @property
         def kwargs(self) -> ParamSpecKwargs: ...
-    Concatenate: _SpecialForm
-    TypeAlias: _SpecialForm
-    TypeGuard: _SpecialForm
-    def is_typeddict(tp: object) -> bool: ...
+    Concatenate: _SpecialForm = ...
+    TypeAlias: _SpecialForm = ...
+    TypeGuard: _SpecialForm = ...
 
-# New things in 3.11
-if sys.version_info >= (3, 11):
-    from typing import Never as Never, Self as Self, assert_never as assert_never, reveal_type as reveal_type
-else:
-    Self: _SpecialForm
-    Never: _SpecialForm
-    def reveal_type(__obj: _T) -> _T: ...
-    def assert_never(__arg: NoReturn) -> NoReturn: ...
+# PEP 646
+Unpack: _SpecialForm = ...
 
-# Experimental (hopefully these will be in 3.11)
-Required: _SpecialForm
-NotRequired: _SpecialForm
-LiteralString: _SpecialForm
-Unpack: _SpecialForm
-
-@final
 class TypeVarTuple:
     __name__: str
     def __init__(self, name: str) -> None: ...
-    def __iter__(self) -> Any: ...  # Unpack[Self]
 
-def dataclass_transform(
-    *,
-    eq_default: bool = ...,
-    order_default: bool = ...,
-    kw_only_default: bool = ...,
-    field_descriptors: tuple[type[Any] | Callable[..., Any], ...] = ...,
-) -> Callable[[_T], _T]: ...
+# PEP 655
+Required: _SpecialForm = ...
+NotRequired: _SpecialForm = ...
 
-# Types not yet implemented in typing_extensions library
-
-def assert_type(val: _T, typ: Any, /) -> _T: ...
-
-# Proposed extension to PEP 647
-StrictTypeGuard: _SpecialForm = ...
+# Pending PEP for "Self" type
+Self: _SpecialForm = ...

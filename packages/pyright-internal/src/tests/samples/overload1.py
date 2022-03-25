@@ -1,6 +1,6 @@
 # This sample tests the type checker's handling of the overload decorator.
 
-from typing import overload, Optional
+from typing import Literal, overload, Optional
 from datetime import datetime, timezone, timedelta
 
 
@@ -47,4 +47,4 @@ def func1(x):
     return x
 
 
-reveal_type(func1(abs(0.0)), expected_text="float")
+t_f1: Literal["float"] = reveal_type(func1(abs(0.0)))

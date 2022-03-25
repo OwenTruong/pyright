@@ -5,9 +5,6 @@ from typing import Any
 
 value_obj: Any = 4
 
-class Foo:
-    x: int
-
 
 match (1, ):
     case a1, b1 if True:
@@ -117,12 +114,12 @@ match (1, ):
     case int():
         pass
 
-    case Foo(1, a40, value_obj.b as b40, c40=3|-2 + 5j|"hi" as d40, y=[e40, f40] as g40,):
+    case int(1, a40, value_obj.b as b40, c40=3|-2 + 5j|"hi" as d40, y=[e40, f40] as g40,):
         pass
   
     # This should generate an error because positional arguments
     # cannot appear after keyword arguments.
-    case Foo(1, a41, x=3, value_obj.b as b41, c41=3, y=[d41, e41] as f41):
+    case str(1, a41, x=3, value_obj.b as b41, c41=3, y=[d41, e41] as f41):
         pass
   
     # This should generate three errors because irrefutable patterns
@@ -151,6 +148,9 @@ match (1, ):
     case _:
         pass
 
+
+class Foo:
+    x: int
 
 
 def func1():

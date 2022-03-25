@@ -3,7 +3,7 @@
 # of another. The order of the constraints as they appear
 # within the TypeVar definition shouldn't matter.
 
-from typing import TypeVar
+from typing import Literal, TypeVar
 
 _T1 = TypeVar("_T1", float, str)
 
@@ -13,11 +13,11 @@ def add1(a: _T1, b: _T1) -> _T1:
 
 
 a1 = add1(3, 5.5)
-reveal_type(a1, expected_text="float")
+ta1: Literal["float"] = reveal_type(a1)
 b1 = add1(3.3, 5)
-reveal_type(b1, expected_text="float")
+tb1: Literal["float"] = reveal_type(b1)
 c1 = add1("3", "5")
-reveal_type(c1, expected_text="str")
+tc1: Literal["str"] = reveal_type(c1)
 
 
 _T2 = TypeVar("_T2", float, int)
@@ -28,8 +28,8 @@ def add2(a: _T2, b: _T2) -> _T2:
 
 
 a2 = add2(3, 5.5)
-reveal_type(a2, expected_text="float")
+ta2: Literal["float"] = reveal_type(a2)
 b2 = add2(3.3, 5)
-reveal_type(b2, expected_text="float")
+tb2: Literal["float"] = reveal_type(b2)
 c2 = add2(3, 5)
-reveal_type(c2, expected_text="int")
+tc2: Literal["int"] = reveal_type(c2)

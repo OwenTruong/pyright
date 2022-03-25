@@ -1,5 +1,4 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import ImageFile
 
@@ -23,8 +22,8 @@ class IcnsFile:
     def getimage(self, size: Any | None = ...): ...
 
 class IcnsImageFile(ImageFile):
-    format: ClassVar[Literal["ICNS"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
     @property
     def size(self): ...
     @size.setter

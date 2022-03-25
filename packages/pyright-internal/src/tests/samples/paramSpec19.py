@@ -62,32 +62,3 @@ def handler(arg1: int, arg2: str) -> dict[str, Any]:
 
 
 v1: CommandHandler2 = handler
-
-
-def func1_1(x: CommandHandler1[str]):
-    x(3, "hi")
-
-
-def func1_2(x: CommandHandler1[[str, int]]):
-    x(3, "hi", 3)
-
-
-def func2_1(x: CommandHandler2[str]):
-    x("hi")
-
-
-def func2_2(x: CommandHandler2[[str, int]]):
-    x("hi", 3)
-
-
-HandlerAlias = Callable[P, None]
-
-list_of_handlers: list[HandlerAlias[...]] = []
-
-
-class HandlerProtocol(Protocol[P]):
-    def __call__(self, /, *args: P.args, **kwargs: P.kwargs) -> None:
-        ...
-
-
-list_of_handler_protocols: list[HandlerProtocol[...]] = []

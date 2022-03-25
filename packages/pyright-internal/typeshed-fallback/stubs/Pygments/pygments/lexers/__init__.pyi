@@ -1,12 +1,13 @@
 from _typeshed import StrOrBytesPath, StrPath
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, Tuple, Union
 
 from pygments.lexer import Lexer, LexerMeta
 
-_OpenFile = StrOrBytesPath | int  # copy/pasted from builtins.pyi
+_OpenFile = Union[StrOrBytesPath, int]  # copy/pasted from builtins.pyi
 
-def get_all_lexers() -> Iterator[tuple[str, tuple[str, ...], tuple[str, ...], tuple[str, ...]]]: ...
+# TODO: use lower-case tuple once mypy updated
+def get_all_lexers() -> Iterator[tuple[str, Tuple[str, ...], Tuple[str, ...], Tuple[str, ...]]]: ...
 def find_lexer_class(name: str) -> LexerMeta | None: ...
 def find_lexer_class_by_name(_alias: str) -> LexerMeta: ...
 def get_lexer_by_name(_alias: str, **options: Any) -> Lexer: ...

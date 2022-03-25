@@ -25,11 +25,9 @@ class CreditCard(Resource):
         Switch: str
         Visa: str
         Unknown: str
-
     class CustomerLocation:
         International: str
         US: str
-
     class CardTypeIndicator:
         Yes: str
         No: str

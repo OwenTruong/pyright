@@ -3,23 +3,23 @@
 
 from collections import defaultdict
 from queue import Queue
-from typing import DefaultDict, List, Type, TypeVar
+from typing import DefaultDict, List, Literal, Type, TypeVar
 
 val1 = Queue()
-reveal_type(val1, expected_text="Queue[Unknown]")
+t1: Literal["Queue[Unknown]"] = reveal_type(val1)
 
 val2 = list()
-reveal_type(val2, expected_text="list[Unknown]")
+t2: Literal["list[Unknown]"] = reveal_type(val2)
 
 _T = TypeVar("_T")
 
 
 def foo(value: Type[_T], b: _T) -> None:
     val1: "DefaultDict[str, list[_T]]" = defaultdict(list)
-    reveal_type(val1, expected_text="defaultdict[str, list[_T@foo]]")
+    t1: Literal["defaultdict[str, list[_T@foo]]"] = reveal_type(val1)
 
     val2: "DefaultDict[str, list[_T]]" = defaultdict(List[_T])
-    reveal_type(val2, expected_text="defaultdict[str, list[_T@foo]]")
+    t2: Literal["defaultdict[str, list[_T@foo]]"] = reveal_type(val2)
 
     # This should generate an error because the type is incompatible.
     val3: "DefaultDict[str, list[_T]]" = defaultdict(list[int])

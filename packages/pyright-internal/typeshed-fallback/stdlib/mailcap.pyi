@@ -1,8 +1,6 @@
-from typing import Mapping, Sequence
+from typing import Dict, Mapping, Sequence, Union
 
-_Cap = dict[str, str | int]
-
-__all__ = ["getcaps", "findmatch"]
+_Cap = Dict[str, Union[str, int]]
 
 def findmatch(
     caps: Mapping[str, list[_Cap]], MIMEtype: str, key: str = ..., filename: str = ..., plist: Sequence[str] = ...

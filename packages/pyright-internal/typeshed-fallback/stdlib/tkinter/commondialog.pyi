@@ -1,8 +1,4 @@
-import sys
 from typing import Any, ClassVar, Mapping
-
-if sys.version_info >= (3, 9):
-    __all__ = ["Dialog"]
 
 class Dialog:
     command: ClassVar[str | None]

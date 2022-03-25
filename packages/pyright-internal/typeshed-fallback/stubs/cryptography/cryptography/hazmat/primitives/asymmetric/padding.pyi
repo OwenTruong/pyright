@@ -8,7 +8,7 @@ class AsymmetricPadding(metaclass=ABCMeta):
     @abstractmethod
     def name(self) -> str: ...
 
-class MGF1:
+class MGF1(object):
     def __init__(self, algorithm: HashAlgorithm) -> None: ...
 
 class OAEP(AsymmetricPadding):

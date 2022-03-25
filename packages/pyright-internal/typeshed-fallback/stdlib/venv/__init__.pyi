@@ -3,9 +3,6 @@ from _typeshed import StrOrBytesPath
 from types import SimpleNamespace
 from typing import Sequence
 
-if sys.version_info >= (3, 9):
-    CORE_VENV_DEPS: tuple[str, ...]
-
 class EnvBuilder:
     system_site_packages: bool
     clear: bool
@@ -35,7 +32,6 @@ class EnvBuilder:
             with_pip: bool = ...,
             prompt: str | None = ...,
         ) -> None: ...
-
     def create(self, env_dir: StrOrBytesPath) -> None: ...
     def clear_directory(self, path: StrOrBytesPath) -> None: ...  # undocumented
     def ensure_directories(self, env_dir: StrOrBytesPath) -> SimpleNamespace: ...

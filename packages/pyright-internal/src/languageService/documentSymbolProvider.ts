@@ -58,7 +58,6 @@ export interface IndexResults {
 
 export interface IndexOptions {
     indexingForAutoImportMode: boolean;
-    forceIndexing?: boolean;
 }
 
 export type WorkspaceSymbolCallback = (symbols: SymbolInformation[]) => void;
@@ -328,7 +327,6 @@ function collectSymbolIndexData(
         // If we are not py.typed package, symbol must exist in __all__ for auto import mode.
         if (
             options.indexingForAutoImportMode &&
-            !options.forceIndexing &&
             !fileInfo.isStubFile &&
             !fileInfo.isInPyTypedPackage &&
             !symbol.isInDunderAll()
@@ -413,21 +411,15 @@ function collectSymbolIndexDataForName(
         );
     }
 
-    let aliasData: IndexAliasData | undefined = undefined;
-    if (DeclarationType.Alias === declaration.type) {
-        aliasData = getIndexAliasData(AnalyzerNodeInfo.getFileInfo(parseResults.parseTree)!.importLookup, declaration);
-        // If we can't create alias data for import alias, then don't include it in index.
-        if (!aliasData) {
-            return;
-        }
-    }
-
     const data: IndexSymbolData = {
         name,
         externallyVisible,
         kind: symbolKind,
         itemKind: convertSymbolKindToCompletionItemKind(symbolKind),
-        alias: aliasData,
+        alias:
+            DeclarationType.Alias === declaration.type
+                ? getIndexAliasData(AnalyzerNodeInfo.getFileInfo(parseResults.parseTree)!.importLookup, declaration)
+                : undefined,
         range: options.indexingForAutoImportMode ? undefined : range,
         selectionRange: options.indexingForAutoImportMode ? undefined : selectionRange,
         children: options.indexingForAutoImportMode ? undefined : children,

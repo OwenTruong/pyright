@@ -2,7 +2,7 @@
 
 # pyright: strict, reportUnusedVariable=false
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 
 JSONArray = List["JSONType"]
@@ -17,30 +17,26 @@ JSONType = Union[JSONPrimitive, JSONStructured]
 # Using type alias checking for list:
 def f2(args: JSONStructured):
     if isinstance(args, List):
-        reveal_type(
-            args,
-            expected_text="List[str | float | int | bool | JSONArray | Dict[str, JSONType] | None]",
-        )
+        t1: Literal[
+            "List[str | float | int | bool | Type[List[JSONType]] | Dict[str, Type[str] | Type[float] | Type[int] | Type[bool] | Type[List[JSONType]] | Type[Dict[str, ...]] | None] | None]"
+        ] = reveal_type(args)
     else:
-        reveal_type(
-            args,
-            expected_text="Dict[str, str | float | int | bool | List[JSONType] | JSONObject | None]",
-        )
+        t2: Literal[
+            "Dict[str, Type[str] | Type[float] | Type[int] | Type[bool] | Type[List[str | float | int | bool | JSONArray | Dict[str, ...] | None]] | Type[Dict[str, ...]] | None]"
+        ] = reveal_type(args)
         dargs: JSONObject = args
 
 
 # Using type alias checking for dict:
 def f3(args: JSONStructured):
     if isinstance(args, Dict):
-        reveal_type(
-            args,
-            expected_text="Dict[str, str | float | int | bool | List[JSONType] | JSONObject | None]",
-        )
+        t1: Literal[
+            "Dict[str, Type[str] | Type[float] | Type[int] | Type[bool] | Type[List[str | float | int | bool | JSONArray | Dict[str, ...] | None]] | Type[Dict[str, ...]] | None]"
+        ] = reveal_type(args)
     else:
-        reveal_type(
-            args,
-            expected_text="List[str | float | int | bool | JSONArray | Dict[str, JSONType] | None]",
-        )
+        t2: Literal[
+            "List[str | float | int | bool | Type[List[JSONType]] | Dict[str, Type[str] | Type[float] | Type[int] | Type[bool] | Type[List[JSONType]] | Type[Dict[str, ...]] | None] | None]"
+        ] = reveal_type(args)
         largs: JSONArray = args
 
 

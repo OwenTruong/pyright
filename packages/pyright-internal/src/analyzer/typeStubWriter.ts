@@ -20,7 +20,6 @@ import {
     IfNode,
     ImportFromNode,
     ImportNode,
-    MemberAccessNode,
     ModuleNameNode,
     NameNode,
     ParameterCategory,
@@ -43,7 +42,7 @@ import { SourceFile } from './sourceFile';
 import { Symbol } from './symbol';
 import * as SymbolNameUtils from './symbolNameUtils';
 import { TypeEvaluator } from './typeEvaluatorTypes';
-import { ClassType, isFunction, isInstantiableClass, isNever, isUnknown, removeUnknownFromUnion } from './types';
+import { isFunction, isNever, isUnknown, removeUnknownFromUnion } from './types';
 
 class TrackedImport {
     constructor(public importName: string) {}
@@ -103,39 +102,12 @@ class ImportSymbolWalker extends ParseTreeWalker {
         return true;
     }
 
-    override visitMemberAccess(node: MemberAccessNode): boolean {
-        const baseExpression = this._getRecursiveModuleAccessExpression(node.leftExpression);
-
-        if (baseExpression) {
-            this._accessedImportedSymbols.set(`${baseExpression}.${node.memberName.value}`, true);
-        }
-
-        return true;
-    }
-
     override visitString(node: StringNode) {
         if (this._treatStringsAsSymbols) {
             this._accessedImportedSymbols.set(node.value, true);
         }
 
         return true;
-    }
-
-    private _getRecursiveModuleAccessExpression(node: ExpressionNode): string | undefined {
-        if (node.nodeType === ParseNodeType.Name) {
-            return node.value;
-        }
-
-        if (node.nodeType === ParseNodeType.MemberAccess) {
-            const baseExpression = this._getRecursiveModuleAccessExpression(node.leftExpression);
-            if (!baseExpression) {
-                return undefined;
-            }
-
-            return `${baseExpression}.${node.memberName.value}`;
-        }
-
-        return undefined;
     }
 }
 
@@ -379,17 +351,6 @@ export class TypeStubWriter extends ParseTreeWalker {
                 const valueType = this._evaluator.getType(node.leftExpression);
                 if (valueType?.typeAliasInfo) {
                     isTypeAlias = true;
-                } else if (node.rightExpression.nodeType === ParseNodeType.Call) {
-                    // Special-case TypeVar, TypeVarTuple, ParamSpec and NewType calls. Treat
-                    // them like type aliases.
-                    const callBaseType = this._evaluator.getType(node.rightExpression.leftExpression);
-                    if (
-                        callBaseType &&
-                        isInstantiableClass(callBaseType) &&
-                        ClassType.isBuiltIn(callBaseType, ['TypeVar', 'TypeVarTuple', 'ParamSpec', 'NewType'])
-                    ) {
-                        isTypeAlias = true;
-                    }
                 }
             }
         } else if (node.leftExpression.nodeType === ParseNodeType.TypeAnnotation) {

@@ -1,22 +1,8 @@
 from _typeshed import Self, SupportsRead
-from typing import Any, Sequence
+from typing import Any, Sequence, Type
 
 from .builder import TreeBuilder
-from .element import (
-    CData as CData,
-    Comment as Comment,
-    Declaration as Declaration,
-    Doctype as Doctype,
-    NavigableString as NavigableString,
-    PageElement as PageElement,
-    ProcessingInstruction as ProcessingInstruction,
-    ResultSet as ResultSet,
-    Script as Script,
-    SoupStrainer as SoupStrainer,
-    Stylesheet as Stylesheet,
-    Tag as Tag,
-    TemplateString as TemplateString,
-)
+from .element import PageElement, SoupStrainer, Tag
 from .formatter import Formatter
 
 class GuessedAtParserWarning(UserWarning): ...
@@ -37,11 +23,11 @@ class BeautifulSoup(Tag):
         self,
         markup: str | bytes | SupportsRead[str] | SupportsRead[bytes] = ...,
         features: str | Sequence[str] | None = ...,
-        builder: TreeBuilder | type[TreeBuilder] | None = ...,
+        builder: TreeBuilder | Type[TreeBuilder] | None = ...,
         parse_only: SoupStrainer | None = ...,
         from_encoding: str | None = ...,
         exclude_encodings: Sequence[str] | None = ...,
-        element_classes: dict[type[PageElement], type[Any]] | None = ...,
+        element_classes: dict[Type[PageElement], Type[Any]] | None = ...,
         **kwargs,
     ) -> None: ...
     def __copy__(self: Self) -> Self: ...
@@ -74,9 +60,7 @@ class BeautifulSoup(Tag):
     def handle_starttag(self, name, namespace, nsprefix, attrs, sourceline: Any | None = ..., sourcepos: Any | None = ...): ...
     def handle_endtag(self, name, nsprefix: Any | None = ...) -> None: ...
     def handle_data(self, data) -> None: ...
-    def decode(  # type: ignore[override]
-        self, pretty_print: bool = ..., eventual_encoding: str = ..., formatter: str | Formatter = ...
-    ): ...  # missing some arguments
+    def decode(self, pretty_print: bool = ..., eventual_encoding: str = ..., formatter: str | Formatter = ...): ...  # type: ignore  # missing some arguments
 
 class BeautifulStoneSoup(BeautifulSoup): ...
 class StopParsing(Exception): ...

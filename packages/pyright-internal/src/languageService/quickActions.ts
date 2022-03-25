@@ -18,7 +18,6 @@ import {
 import * as ParseTreeUtils from '../analyzer/parseTreeUtils';
 import { Commands } from '../commands/commands';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
-import { appendArray } from '../common/collectionUtils';
 import { TextEditAction } from '../common/editAction';
 import { convertOffsetToPosition } from '../common/positionUtils';
 import { TextRange } from '../common/textRange';
@@ -96,7 +95,7 @@ function _addMissingOptionalToParam(
             importStatement,
             parseResults
         );
-        appendArray(editActions, additionalEditActions);
+        editActions.push(...additionalEditActions);
     } else {
         const additionalEditActions = getTextEditsForAutoImportInsertion(
             { name: 'Optional' },
@@ -106,7 +105,7 @@ function _addMissingOptionalToParam(
             parseResults,
             startPos
         );
-        appendArray(editActions, additionalEditActions);
+        editActions.push(...additionalEditActions);
     }
 
     return editActions;

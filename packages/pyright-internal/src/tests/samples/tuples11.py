@@ -5,17 +5,17 @@ from typing import Tuple
 
 
 def func1(t1: Tuple[int, ...], t2: Tuple[int, ...]):
-    return t1 >= t2
+    t1 >= t2
 
 
 def func2(t1: Tuple[int, ...], t2: Tuple[str, int]):
-    return t1 < t2
+    t1 < t2
 
 
 def func3(t1: Tuple[int, int], t2: Tuple[int, ...]):
-    return t1 > t2
+    t1 > t2
 
 
 def func4(t1: Tuple[int, ...], t2: Tuple[str, ...]):
     # This should generate an error
-    return t1 <= t2
+    t1 <= t2

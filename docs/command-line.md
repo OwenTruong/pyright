@@ -85,5 +85,3 @@ Each Diagnostic is output in the following format:
 ```
 
 Diagnostic line and character numbers are zero-based.
-
-Not all diagnostics have an associated diagnostic rule. Diagnostic rules are used only for diagnostics that can be disabled or enabled. If a rule is associated with the diagnostic, it is included in the output. If it’s not, the rule field is omitted from the JSON output.

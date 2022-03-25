@@ -40,7 +40,6 @@ class Transaction(Resource):
     class CreatedUsing:
         FullInformation: str
         Token: str
-
     class GatewayRejectionReason:
         ApplicationIncomplete: str
         Avs: str
@@ -51,19 +50,16 @@ class Transaction(Resource):
         RiskThreshold: str
         ThreeDSecure: str
         TokenIssuance: str
-
     class Source:
         Api: str
         ControlPanel: str
         Recurring: str
-
     class EscrowStatus:
         HoldPending: str
         Held: str
         ReleasePending: str
         Released: str
         Refunded: str
-
     class Status:
         AuthorizationExpired: str
         Authorized: str
@@ -79,16 +75,13 @@ class Transaction(Resource):
         Settling: str
         SubmittedForSettlement: str
         Voided: str
-
     class Type:
         Credit: str
         Sale: str
-
     class IndustryType:
         Lodging: str
         TravelAndCruise: str
         TravelAndFlight: str
-
     class AdditionalCharge:
         Restaurant: str
         GiftShop: str

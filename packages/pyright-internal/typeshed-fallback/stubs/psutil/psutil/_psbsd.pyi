@@ -1,5 +1,4 @@
-from contextlib import AbstractContextManager
-from typing import Any, NamedTuple
+from typing import Any, ContextManager, NamedTuple
 
 from ._common import (
     FREEBSD as FREEBSD,
@@ -110,7 +109,7 @@ def pids(): ...
 def pid_exists(pid): ...
 def is_zombie(pid): ...
 def wrap_exceptions(fun): ...
-def wrap_exceptions_procfs(inst) -> AbstractContextManager[None]: ...
+def wrap_exceptions_procfs(inst) -> ContextManager[None]: ...
 
 class Process:
     pid: Any
@@ -141,14 +140,12 @@ class Process:
     def status(self): ...
     def io_counters(self): ...
     def cwd(self): ...
-
     class nt_mmap_grouped(NamedTuple):
         path: Any
         rss: Any
         private: Any
         ref_count: Any
         shadow_count: Any
-
     class nt_mmap_ext(NamedTuple):
         addr: Any
         perms: Any

@@ -1,16 +1,16 @@
 from collections.abc import Generator, Iterable
 from typing import Any
 
-class HTMLParser:  # actually html5lib.HTMLParser
+class HTMLParser(object):  # actually html5lib.HTMLParser
     def __getattr__(self, __name: str) -> Any: ...  # incomplete
 
-class Filter:  # actually html5lib.filters.base.Filter
+class Filter(object):  # actually html5lib.filters.base.Filter
     def __getattr__(self, __name: str) -> Any: ...  # incomplete
 
-class SanitizerFilter:  # actually html5lib.filters.sanitizer.Filter
+class SanitizerFilter(object):  # actually html5lib.filters.sanitizer.Filter
     def __getattr__(self, __name: str) -> Any: ...  # incomplete
 
-class HTMLSerializer:  # actually html5lib.serializer.HTMLSerializer
+class HTMLSerializer(object):  # actually html5lib.serializer.HTMLSerializer
     def __getattr__(self, __name: str) -> Any: ...  # incomplete
 
 class BleachHTMLParser(HTMLParser):

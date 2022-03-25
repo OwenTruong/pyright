@@ -116,7 +116,7 @@ export class ConsoleWithLogLevel implements ConsoleInterface {
 
     private _maxLevel = 2;
 
-    constructor(private _console: ConsoleInterface, private _name = '') {}
+    constructor(private _console: ConsoleInterface) {}
 
     get level(): LogLevel {
         switch (this._maxLevel) {
@@ -143,23 +143,19 @@ export class ConsoleWithLogLevel implements ConsoleInterface {
     }
 
     error(message: string) {
-        this._log(LogLevel.Error, `${this._prefix}${message}`);
+        this._log(LogLevel.Error, message);
     }
 
     warn(message: string) {
-        this._log(LogLevel.Warn, `${this._prefix}${message}`);
+        this._log(LogLevel.Warn, message);
     }
 
     info(message: string) {
-        this._log(LogLevel.Info, `${this._prefix}${message}`);
+        this._log(LogLevel.Info, message);
     }
 
     log(message: string) {
-        this._log(LogLevel.Log, `${this._prefix}${message}`);
-    }
-
-    private get _prefix() {
-        return this._name ? `(${this._name}) ` : '';
+        this._log(LogLevel.Log, message);
     }
 
     private _log(level: LogLevel, message: string): void {

@@ -1,9 +1,8 @@
 import datetime
-from _typeshed import Self
 from abc import ABCMeta, abstractmethod
 from enum import Enum
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
-from typing import Any, ClassVar, Generator, Generic, Iterable, Sequence, TypeVar
+from typing import Any, ClassVar, Generator, Generic, Iterable, Sequence, Text, Type, TypeVar
 
 from cryptography.hazmat.backends.interfaces import X509Backend
 from cryptography.hazmat.primitives.asymmetric.dsa import DSAPrivateKey, DSAPublicKey
@@ -14,16 +13,16 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPubl
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 from cryptography.hazmat.primitives.serialization import Encoding
 
-class ObjectIdentifier:
+class ObjectIdentifier(object):
     dotted_string: str
     def __init__(self, dotted_string: str) -> None: ...
 
-class CRLEntryExtensionOID:
+class CRLEntryExtensionOID(object):
     CERTIFICATE_ISSUER: ClassVar[ObjectIdentifier]
     CRL_REASON: ClassVar[ObjectIdentifier]
     INVALIDITY_DATE: ClassVar[ObjectIdentifier]
 
-class ExtensionOID:
+class ExtensionOID(object):
     AUTHORITY_INFORMATION_ACCESS: ClassVar[ObjectIdentifier]
     AUTHORITY_KEY_IDENTIFIER: ClassVar[ObjectIdentifier]
     BASIC_CONSTRAINTS: ClassVar[ObjectIdentifier]
@@ -49,7 +48,7 @@ class ExtensionOID:
     SUBJECT_KEY_IDENTIFIER: ClassVar[ObjectIdentifier]
     TLS_FEATURE: ClassVar[ObjectIdentifier]
 
-class NameOID:
+class NameOID(object):
     BUSINESS_CATEGORY: ClassVar[ObjectIdentifier]
     COMMON_NAME: ClassVar[ObjectIdentifier]
     COUNTRY_NAME: ClassVar[ObjectIdentifier]
@@ -75,10 +74,10 @@ class NameOID:
     USER_ID: ClassVar[ObjectIdentifier]
     X500_UNIQUE_IDENTIFIER: ClassVar[ObjectIdentifier]
 
-class OCSPExtensionOID:
+class OCSPExtensionOID(object):
     NONCE: ClassVar[ObjectIdentifier]
 
-class SignatureAlgorithmOID:
+class SignatureAlgorithmOID(object):
     DSA_WITH_SHA1: ClassVar[ObjectIdentifier]
     DSA_WITH_SHA224: ClassVar[ObjectIdentifier]
     DSA_WITH_SHA256: ClassVar[ObjectIdentifier]
@@ -97,7 +96,7 @@ class SignatureAlgorithmOID:
     RSA_WITH_SHA384: ClassVar[ObjectIdentifier]
     RSA_WITH_SHA512: ClassVar[ObjectIdentifier]
 
-class ExtendedKeyUsageOID:
+class ExtendedKeyUsageOID(object):
     SERVER_AUTH: ClassVar[ObjectIdentifier]
     CLIENT_AUTH: ClassVar[ObjectIdentifier]
     CODE_SIGNING: ClassVar[ObjectIdentifier]
@@ -106,19 +105,19 @@ class ExtendedKeyUsageOID:
     OCSP_SIGNING: ClassVar[ObjectIdentifier]
     ANY_EXTENDED_KEY_USAGE: ClassVar[ObjectIdentifier]
 
-class NameAttribute:
+class NameAttribute(object):
     oid: ObjectIdentifier
-    value: str
-    def __init__(self, oid: ObjectIdentifier, value: str) -> None: ...
+    value: Text
+    def __init__(self, oid: ObjectIdentifier, value: Text) -> None: ...
     def rfc4514_string(self) -> str: ...
 
-class RelativeDistinguishedName:
+class RelativeDistinguishedName(object):
     def __init__(self, attributes: list[NameAttribute]) -> None: ...
     def __iter__(self) -> Generator[NameAttribute, None, None]: ...
     def get_attributes_for_oid(self, oid: ObjectIdentifier) -> list[NameAttribute]: ...
     def rfc4514_string(self) -> str: ...
 
-class Name:
+class Name(object):
     rdns: list[RelativeDistinguishedName]
     def __init__(self, attributes: Sequence[NameAttribute | RelativeDistinguishedName]) -> None: ...
     def __iter__(self) -> Generator[NameAttribute, None, None]: ...
@@ -150,7 +149,7 @@ class Certificate(metaclass=ABCMeta):
     @abstractmethod
     def public_key(self) -> DSAPublicKey | Ed25519PublicKey | Ed448PublicKey | EllipticCurvePublicKey | RSAPublicKey: ...
 
-class CertificateBuilder:
+class CertificateBuilder(object):
     def __init__(
         self,
         issuer_name: Name | None = ...,
@@ -197,7 +196,7 @@ class CertificateRevocationList(metaclass=ABCMeta):
     @abstractmethod
     def public_bytes(self, encoding: Encoding) -> bytes: ...
 
-class CertificateRevocationListBuilder:
+class CertificateRevocationListBuilder(object):
     def add_extension(self, extension: ExtensionType, critical: bool) -> CertificateRevocationListBuilder: ...
     def add_revoked_certificate(self, revoked_certificate: RevokedCertificate) -> CertificateRevocationListBuilder: ...
     def issuer_name(self, name: Name) -> CertificateRevocationListBuilder: ...
@@ -223,7 +222,7 @@ class CertificateSigningRequest(metaclass=ABCMeta):
     @abstractmethod
     def public_key(self) -> DSAPublicKey | Ed25519PublicKey | Ed448PublicKey | EllipticCurvePublicKey | RSAPublicKey: ...
 
-class CertificateSigningRequestBuilder:
+class CertificateSigningRequestBuilder(object):
     def add_extension(self, extension: ExtensionType, critical: bool) -> CertificateSigningRequestBuilder: ...
     def subject_name(self, name: Name) -> CertificateSigningRequestBuilder: ...
     def sign(
@@ -238,7 +237,7 @@ class RevokedCertificate(metaclass=ABCMeta):
     revocation_date: datetime.datetime
     serial_number: int
 
-class RevokedCertificateBuilder:
+class RevokedCertificateBuilder(object):
     def add_extension(self, extension: ExtensionType, critical: bool) -> RevokedCertificateBuilder: ...
     def build(self, backend: X509Backend | None = ...) -> RevokedCertificate: ...
     def revocation_date(self, time: datetime.datetime) -> RevokedCertificateBuilder: ...
@@ -254,8 +253,8 @@ class DirectoryName(GeneralName):
     def __init__(self, value: Name) -> None: ...
 
 class DNSName(GeneralName):
-    value: str
-    def __init__(self, value: str) -> None: ...
+    value: Text
+    def __init__(self, value: Text) -> None: ...
 
 class IPAddress(GeneralName):
     value: IPv4Address | IPv6Address | IPv4Network | IPv6Network
@@ -271,30 +270,30 @@ class RegisteredID(GeneralName):
     def __init__(self, value: ObjectIdentifier) -> None: ...
 
 class RFC822Name(GeneralName):
-    value: str
-    def __init__(self, value: str) -> None: ...
+    value: Text
+    def __init__(self, value: Text) -> None: ...
 
 class UniformResourceIdentifier(GeneralName):
-    value: str
-    def __init__(self, value: str) -> None: ...
+    value: Text
+    def __init__(self, value: Text) -> None: ...
 
 # X.509 Extensions
 
 class ExtensionType(metaclass=ABCMeta):
     oid: ObjectIdentifier
 
-_T = TypeVar("_T", bound=ExtensionType)
+_T = TypeVar("_T", bound="ExtensionType")
 
 class Extension(Generic[_T]):
     critical: bool
     oid: ObjectIdentifier
     value: _T
 
-class Extensions:
+class Extensions(object):
     def __init__(self, general_names: list[Extension[Any]]) -> None: ...
     def __iter__(self) -> Generator[Extension[Any], None, None]: ...
     def get_extension_for_oid(self, oid: ObjectIdentifier) -> Extension[Any]: ...
-    def get_extension_for_class(self, extclass: type[_T]) -> Extension[_T]: ...
+    def get_extension_for_class(self, extclass: Type[_T]) -> Extension[_T]: ...
 
 class DuplicateExtension(Exception):
     oid: ObjectIdentifier
@@ -307,12 +306,12 @@ class ExtensionNotFound(Exception):
 class IssuerAlternativeName(ExtensionType):
     def __init__(self, general_names: list[GeneralName]) -> None: ...
     def __iter__(self) -> Generator[GeneralName, None, None]: ...
-    def get_values_for_type(self, type: type[GeneralName]) -> list[Any]: ...
+    def get_values_for_type(self, type: Type[GeneralName]) -> list[Any]: ...
 
 class SubjectAlternativeName(ExtensionType):
     def __init__(self, general_names: list[GeneralName]) -> None: ...
     def __iter__(self) -> Generator[GeneralName, None, None]: ...
-    def get_values_for_type(self, type: type[GeneralName]) -> list[Any]: ...
+    def get_values_for_type(self, type: Type[GeneralName]) -> list[Any]: ...
 
 class AuthorityKeyIdentifier(ExtensionType):
     @property
@@ -326,10 +325,10 @@ class AuthorityKeyIdentifier(ExtensionType):
     ) -> None: ...
     @classmethod
     def from_issuer_public_key(
-        cls: type[Self], public_key: RSAPublicKey | DSAPublicKey | EllipticCurvePublicKey | Ed25519PublicKey | Ed448PublicKey
-    ) -> Self: ...
+        cls, public_key: RSAPublicKey | DSAPublicKey | EllipticCurvePublicKey | Ed25519PublicKey | Ed448PublicKey
+    ) -> AuthorityKeyIdentifier: ...
     @classmethod
-    def from_issuer_subject_key_identifier(cls: type[Self], ski: SubjectKeyIdentifier) -> Self: ...
+    def from_issuer_subject_key_identifier(cls, ski: SubjectKeyIdentifier) -> AuthorityKeyIdentifier: ...
 
 class SubjectKeyIdentifier(ExtensionType):
     @property
@@ -337,8 +336,8 @@ class SubjectKeyIdentifier(ExtensionType):
     def __init__(self, digest: bytes) -> None: ...
     @classmethod
     def from_public_key(
-        cls: type[Self], public_key: RSAPublicKey | DSAPublicKey | EllipticCurvePublicKey | Ed25519PublicKey | Ed448PublicKey
-    ) -> Self: ...
+        cls, public_key: RSAPublicKey | DSAPublicKey | EllipticCurvePublicKey | Ed25519PublicKey | Ed448PublicKey
+    ) -> SubjectKeyIdentifier: ...
 
 class AccessDescription:
     @property

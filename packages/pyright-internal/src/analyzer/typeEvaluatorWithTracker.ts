@@ -73,21 +73,16 @@ export function createTypeEvaluatorWithTracker(
         evaluateTypesForMatchNode: typeEvaluator.evaluateTypesForMatchNode,
         evaluateTypesForCaseNode: typeEvaluator.evaluateTypesForCaseNode,
         evaluateTypeOfParameter: typeEvaluator.evaluateTypeOfParameter,
-        canBeTruthy: typeEvaluator.canBeTruthy,
-        canBeFalsy: typeEvaluator.canBeFalsy,
-        removeTruthinessFromType: typeEvaluator.removeTruthinessFromType,
-        removeFalsinessFromType: typeEvaluator.removeFalsinessFromType,
         getExpectedType: (n) => run('getExpectedType', () => typeEvaluator.getExpectedType(n), n),
         verifyRaiseExceptionType: (n) =>
             run('verifyRaiseExceptionType', () => typeEvaluator.verifyRaiseExceptionType(n), n),
         verifyDeleteExpression: (n) => run('verifyDeleteExpression', () => typeEvaluator.verifyDeleteExpression(n), n),
         isAfterNodeReachable: (n) => run('isAfterNodeReachable', () => typeEvaluator.isAfterNodeReachable(n), n),
         isNodeReachable: (n, s) => run('isNodeReachable', () => typeEvaluator.isNodeReachable(n, s), n),
-        isAsymmetricDescriptorAssignment: typeEvaluator.isAsymmetricDescriptorAssignment,
         suppressDiagnostics: (node, callback) =>
             run('suppressDiagnostics', () => typeEvaluator.suppressDiagnostics(node, callback)),
-        getDeclarationsForNameNode: (n, s) =>
-            run('getDeclarationsForNameNode', () => typeEvaluator.getDeclarationsForNameNode(n, s), n),
+        getDeclarationsForNameNode: (n) =>
+            run('getDeclarationsForNameNode', () => typeEvaluator.getDeclarationsForNameNode(n), n),
         getTypeForDeclaration: (n) => run('getTypeForDeclaration', () => typeEvaluator.getTypeForDeclaration(n), n),
         resolveAliasDeclaration: (d, l, h) =>
             run('resolveAliasDeclaration', () => typeEvaluator.resolveAliasDeclaration(d, l, h), d),
@@ -99,7 +94,6 @@ export function createTypeEvaluatorWithTracker(
             run('getTypeFromIterator', () => typeEvaluator.getTypeFromIterator(t, a, e), t),
         getGetterTypeFromProperty: (p, i) =>
             run('getGetterTypeFromProperty', () => typeEvaluator.getGetterTypeFromProperty(p, i), p),
-        getTypeForArgument: typeEvaluator.getTypeForArgument,
         markNamesAccessed: (n, a) => run('markNamesAccessed', () => typeEvaluator.markNamesAccessed(n, a), n),
         getScopeIdForNode: typeEvaluator.getScopeIdForNode,
         makeTopLevelTypeVarsConcrete: (t) =>
@@ -124,13 +118,13 @@ export function createTypeEvaluatorWithTracker(
         getTypeFromObjectMember: typeEvaluator.getTypeFromObjectMember,
         getBoundMethod: typeEvaluator.getBoundMethod,
         getTypeFromMagicMethodReturn: typeEvaluator.getTypeFromMagicMethodReturn,
-        bindFunctionToClassOrObject: typeEvaluator.bindFunctionToClassOrObject,
+        bindFunctionToClassOrObject: (b, m) =>
+            run('bindFunctionToClassOrObject', () => typeEvaluator.bindFunctionToClassOrObject(b, m), m),
         getCallSignatureInfo: (n, i, a) =>
             run('getCallSignatureInfo', () => typeEvaluator.getCallSignatureInfo(n, i, a), n),
         getTypeAnnotationForParameter: (n, p) =>
             run('getTypeAnnotationForParameter', () => typeEvaluator.getTypeAnnotationForParameter(n, p), n),
         getAbstractMethods: (c) => run('getAbstractMethods', () => typeEvaluator.getAbstractMethods(c), c),
-        narrowConstrainedTypeVar: typeEvaluator.narrowConstrainedTypeVar,
         canAssignType: (d, s, a, m, f) => run('canAssignType', () => typeEvaluator.canAssignType(d, s, a, m, f), d),
         canOverrideMethod: (b, o, d, e) =>
             run('canOverrideMethod', () => typeEvaluator.canOverrideMethod(b, o, d, e), o),
@@ -139,7 +133,6 @@ export function createTypeEvaluatorWithTracker(
         assignTypeToExpression: typeEvaluator.assignTypeToExpression,
         getBuiltInObject: typeEvaluator.getBuiltInObject,
         getTypingType: typeEvaluator.getTypingType,
-        inferReturnTypeIfNecessary: typeEvaluator.inferReturnTypeIfNecessary,
         addError: (m, n) => run('addError', () => typeEvaluator.addError(m, n), n),
         addWarning: (m, n) => run('addWarning', () => typeEvaluator.addWarning(m, n), n),
         addInformation: (m, n) => run('addInformation', () => typeEvaluator.addInformation(m, n), n),
@@ -152,7 +145,6 @@ export function createTypeEvaluatorWithTracker(
         printFunctionParts: (t) => run('printFunctionParts', () => typeEvaluator.printFunctionParts(t), t),
         getTypeCacheSize: typeEvaluator.getTypeCacheSize,
         useSpeculativeMode: typeEvaluator.useSpeculativeMode,
-        setTypeForNode: typeEvaluator.setTypeForNode,
         checkForCancellation: typeEvaluator.checkForCancellation,
     };
 

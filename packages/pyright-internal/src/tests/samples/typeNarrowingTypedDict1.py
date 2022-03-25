@@ -1,7 +1,7 @@
 # This sample tests type narrowing for TypedDict types based
 # on whether a key is in or not in the dict.
 
-from typing import TypedDict, Union, final
+from typing import Literal, TypedDict, Union, final
 
 
 @final
@@ -29,37 +29,37 @@ class TD4(TypedDict):
 
 def f1(p: Union[TD1, TD2]):
     if "b" in p:
-        reveal_type(p, expected_text="TD1")
+        tp1: Literal["TD1"] = reveal_type(p)
     else:
-        reveal_type(p, expected_text="TD2")
+        tp2: Literal["TD2"] = reveal_type(p)
 
 
 def f2(p: Union[TD1, TD2]):
     if "b" not in p:
-        reveal_type(p, expected_text="TD2")
+        tp1: Literal["TD2"] = reveal_type(p)
     else:
-        reveal_type(p, expected_text="TD1")
+        tp2: Literal["TD1"] = reveal_type(p)
 
 
 def f3(p: Union[TD1, TD3]):
     if "d" in p:
-        reveal_type(p, expected_text="TD3")
+        tp1: Literal["TD3"] = reveal_type(p)
     else:
-        reveal_type(p, expected_text="TD1 | TD3")
+        tp2: Literal["TD1 | TD3"] = reveal_type(p)
 
 
 def f4(p: Union[TD1, TD3]):
     if "d" not in p:
-        reveal_type(p, expected_text="TD1 | TD3")
+        tp1: Literal["TD1 | TD3"] = reveal_type(p)
     else:
-        reveal_type(p, expected_text="TD3")
+        tp2: Literal["TD3"] = reveal_type(p)
 
 
 def f5(p: Union[TD1, TD3]):
     if "a" in p:
-        reveal_type(p, expected_text="TD1 | TD3")
+        tp1: Literal["TD1 | TD3"] = reveal_type(p)
     else:
-        reveal_type(p, expected_text="TD3")
+        tp2: Literal["TD3"] = reveal_type(p)
 
 
 def f6(p: Union[TD1, TD2, TD3]):
@@ -70,14 +70,14 @@ def f6(p: Union[TD1, TD2, TD3]):
 
     if "c" in p:
         v3 = p["c"]
-        reveal_type(v3, expected_text="str")
+        t_v3: Literal["str"] = reveal_type(v3)
 
     if "a" in p and "d" in p:
         v4 = p["a"]
-        reveal_type(v4, expected_text="int")
+        t_v4: Literal["int"] = reveal_type(v4)
 
         v5 = p["d"]
-        reveal_type(v5, expected_text="str")
+        t_v5: Literal["str"] = reveal_type(v5)
 
     # This should generate two errors, one for TD1 and another for TD2.
     v6 = p["d"]
@@ -94,6 +94,6 @@ def f8(p: TD3):
 
 def f9(p: Union[TD1, TD4]):
     if "b" in p:
-        reveal_type(p, expected_text="TD1 | TD4")
+        tp1: Literal["TD1 | TD4"] = reveal_type(p)
     else:
-        reveal_type(p, expected_text="TD4")
+        tp2: Literal["TD4"] = reveal_type(p)

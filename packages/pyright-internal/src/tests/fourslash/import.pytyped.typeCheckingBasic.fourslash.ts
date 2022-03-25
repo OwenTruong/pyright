@@ -11,28 +11,16 @@
 
 // @filename: testLib/__init__.py
 // @library: true
-//// class Foo:
-////    def method1(self):
-////        '''Method docs'''
-////        return None
-////
-//// # This method has no annotation
-//// def foo(a):
-////    return Foo()
+//// # This method is missing a return annotation
+//// def foo():
+////    return
 
 // @filename: .src/test.py
+//// # pyright: strict
 //// from testLib import foo
-//// foo(1).me[|/*marker1*/|]
+//// [|/*marker*/a|] = foo()
 
 // @ts-ignore
-await helper.verifyCompletion('included', 'markdown', {
-    marker1: {
-        completions: [
-            {
-                label: 'method1',
-                kind: Consts.CompletionItemKind.Method,
-                documentation: '```python\nmethod1: () -> None\n```\n---\nMethod docs',
-            },
-        ],
-    },
+await helper.verifyDiagnostics({
+    marker: { category: 'error', message: `Type of "a" is unknown` },
 });

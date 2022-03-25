@@ -11,7 +11,6 @@ class UsBankAccountVerification(AttributeGetter):
         Unrecognized: str
         Verified: str
         Pending: str
-
     class VerificationMethod:
         NetworkCheck: str
         IndependentCheck: str

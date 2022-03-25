@@ -1,7 +1,7 @@
-from typing import Any, Iterable, Mapping, overload
+from typing import Any, Iterable, List, Mapping, Optional, Tuple, overload
 
-_Option = tuple[str, str | None, str]
-_GR = tuple[list[str], OptionDummy]
+_Option = Tuple[str, Optional[str], str]
+_GR = Tuple[List[str], OptionDummy]
 
 def fancy_getopt(
     options: list[_Option], negative_opt: Mapping[_Option, _Option], object: Any, args: list[str] | None

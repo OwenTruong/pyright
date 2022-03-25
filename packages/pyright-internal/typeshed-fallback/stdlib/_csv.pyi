@@ -1,12 +1,9 @@
-from typing import Any, Iterable, Iterator, Protocol, Union
-from typing_extensions import Literal
+from typing import Any, Iterable, Iterator, List, Protocol, Type, Union
 
-__version__: str
-
-QUOTE_ALL: Literal[1]
-QUOTE_MINIMAL: Literal[0]
-QUOTE_NONE: Literal[3]
-QUOTE_NONNUMERIC: Literal[2]
+QUOTE_ALL: int
+QUOTE_MINIMAL: int
+QUOTE_NONE: int
+QUOTE_NONNUMERIC: int
 
 class Error(Exception): ...
 
@@ -21,9 +18,9 @@ class Dialect:
     strict: int
     def __init__(self) -> None: ...
 
-_DialectLike = Union[str, Dialect, type[Dialect]]
+_DialectLike = Union[str, Dialect, Type[Dialect]]
 
-class _reader(Iterator[list[str]]):
+class _reader(Iterator[List[str]]):
     dialect: Dialect
     line_num: int
     def __next__(self) -> list[str]: ...
@@ -34,7 +31,7 @@ class _writer:
     def writerows(self, rows: Iterable[Iterable[Any]]) -> None: ...
 
 class _Writer(Protocol):
-    def write(self, __s: str) -> object: ...
+    def write(self, s: str) -> Any: ...
 
 def writer(csvfile: _Writer, dialect: _DialectLike = ..., **fmtparams: Any) -> _writer: ...
 def reader(csvfile: Iterable[str], dialect: _DialectLike = ..., **fmtparams: Any) -> _reader: ...

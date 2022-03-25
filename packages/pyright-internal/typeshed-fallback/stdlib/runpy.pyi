@@ -2,8 +2,6 @@ from _typeshed import Self
 from types import ModuleType
 from typing import Any
 
-__all__ = ["run_module", "run_path"]
-
 class _TempModule:
     mod_name: str
     module: ModuleType

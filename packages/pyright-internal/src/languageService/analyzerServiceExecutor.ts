@@ -11,7 +11,6 @@ import { isPythonBinary } from '../analyzer/pythonPathUtils';
 import { AnalyzerService } from '../analyzer/service';
 import type { BackgroundAnalysis } from '../backgroundAnalysis';
 import { CommandLineOptions } from '../common/commandLineOptions';
-import { LogLevel } from '../common/console';
 import { createDeferred } from '../common/deferred';
 import { FileSystem } from '../common/fileSystem';
 import { combinePaths } from '../common/pathUtils';
@@ -123,12 +122,6 @@ function getEffectiveCommandLineOptions(
 
     if (serverSettings.stubPath) {
         commandLineOptions.stubPath = serverSettings.stubPath;
-    }
-
-    if (serverSettings.logLevel === LogLevel.Log) {
-        // When logLevel is "Trace", turn on verboseOutput as well
-        // so we can get detailed log from analysis service.
-        commandLineOptions.verboseOutput = true;
     }
 
     if (typeStubTargetImportName) {

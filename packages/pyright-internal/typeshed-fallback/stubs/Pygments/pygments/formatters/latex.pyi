@@ -1,11 +1,9 @@
-from typing import Any, TypeVar
+from typing import Any
 
 from pygments.formatter import Formatter
 from pygments.lexer import Lexer
 
-_T = TypeVar("_T", str, bytes)
-
-class LatexFormatter(Formatter[_T]):
+class LatexFormatter(Formatter):
     name: str
     aliases: Any
     filenames: Any
@@ -23,6 +21,7 @@ class LatexFormatter(Formatter[_T]):
     left: Any
     right: Any
     envname: Any
+    def __init__(self, **options) -> None: ...
     def get_style_defs(self, arg: str = ...): ...
     def format_unencoded(self, tokensource, outfile) -> None: ...
 

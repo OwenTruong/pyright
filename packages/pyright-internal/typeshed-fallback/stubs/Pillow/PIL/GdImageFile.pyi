@@ -1,10 +1,7 @@
-from typing import ClassVar
-from typing_extensions import Literal
-
 from .ImageFile import ImageFile
 
 class GdImageFile(ImageFile):
-    format: ClassVar[Literal["GD"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
 
 def open(fp, mode: str = ...): ...

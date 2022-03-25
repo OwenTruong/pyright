@@ -1,15 +1,13 @@
 from _typeshed import Self
 from queue import Queue
 from types import TracebackType
-from typing import Any, Union
-
-__all__ = ["Client", "Listener", "Pipe"]
+from typing import Any, Tuple, Type, Union
 
 families: list[None]
 
-_Address = Union[str, tuple[str, int]]
+_Address = Union[str, Tuple[str, int]]
 
-class Connection:
+class Connection(object):
     _in: Any
     _out: Any
     recv: Any
@@ -18,19 +16,19 @@ class Connection:
     send_bytes: Any
     def __enter__(self: Self) -> Self: ...
     def __exit__(
-        self, exc_type: type[BaseException] | None, exc_value: BaseException | None, exc_tb: TracebackType | None
+        self, exc_type: Type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None
     ) -> None: ...
     def __init__(self, _in: Any, _out: Any) -> None: ...
     def close(self) -> None: ...
     def poll(self, timeout: float = ...) -> bool: ...
 
-class Listener:
+class Listener(object):
     _backlog_queue: Queue[Any] | None
     @property
     def address(self) -> Queue[Any] | None: ...
     def __enter__(self: Self) -> Self: ...
     def __exit__(
-        self, exc_type: type[BaseException] | None, exc_value: BaseException | None, exc_tb: TracebackType | None
+        self, exc_type: Type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None
     ) -> None: ...
     def __init__(self, address: _Address | None = ..., family: int | None = ..., backlog: int = ...) -> None: ...
     def accept(self) -> Connection: ...

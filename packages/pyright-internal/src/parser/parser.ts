@@ -13,7 +13,6 @@
 
 import Char from 'typescript-char';
 
-import { appendArray } from '../common/collectionUtils';
 import { assert } from '../common/debug';
 import { Diagnostic, DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticSink } from '../common/diagnosticSink';
@@ -63,9 +62,9 @@ import {
     ImportNode,
     IndexNode,
     LambdaNode,
-    ListComprehensionForIfNode,
     ListComprehensionForNode,
     ListComprehensionIfNode,
+    ListComprehensionIterNode,
     ListComprehensionNode,
     ListNode,
     MatchNode,
@@ -147,14 +146,12 @@ export class ParseOptions {
         this.pythonVersion = latestStablePythonVersion;
         this.reportInvalidStringEscapeSequence = false;
         this.skipFunctionAndClassBody = false;
-        this.ipythonMode = false;
     }
 
     isStubFile: boolean;
     pythonVersion: PythonVersion;
     reportInvalidStringEscapeSequence: boolean;
     skipFunctionAndClassBody: boolean;
-    ipythonMode: boolean;
 }
 
 export interface ParseResults {
@@ -164,7 +161,6 @@ export interface ParseResults {
     futureImports: Map<string, boolean>;
     tokenizerOutput: TokenizerOutput;
     containsWildcardImport: boolean;
-    typingSymbolAliases: Map<string, string>;
 }
 
 export interface ParseExpressionTextResults {
@@ -183,19 +179,15 @@ export interface ModuleImport {
     importedSymbols: string[] | undefined;
 }
 
-export interface ArgListResult {
-    args: ArgumentNode[];
-    trailingComma: boolean;
-}
-
 const enum ParseTextMode {
     Expression,
     VariableAnnotation,
     FunctionAnnotation,
 }
 
-// Limit the max child node depth to prevent stack overflows.
-const maxChildNodeDepth = 256;
+// PEP 637 proposed support for keyword arguments in subscript
+// expressions, but it was rejected.
+const supportPEP637 = false;
 
 export class Parser {
     private _fileContents?: string;
@@ -258,7 +250,6 @@ export class Parser {
             futureImports: this._futureImportMap,
             tokenizerOutput: this._tokenizerOutput!,
             containsWildcardImport: this._containsWildcardImport,
-            typingSymbolAliases: this._typingSymbolAliases,
         };
     }
 
@@ -268,15 +259,10 @@ export class Parser {
         textLength: number,
         parseOptions: ParseOptions,
         parseTextMode = ParseTextMode.Expression,
-        initialParenDepth = 0,
-        typingSymbolAliases?: Map<string, string>
+        initialParenDepth = 0
     ): ParseExpressionTextResults {
         const diagSink = new DiagnosticSink();
         this._startNewParse(fileContents, textOffset, textLength, parseOptions, diagSink, initialParenDepth);
-
-        if (typingSymbolAliases) {
-            this._typingSymbolAliases = new Map<string, string>(typingSymbolAliases);
-        }
 
         let parseTree: ExpressionNode | undefined;
         if (parseTextMode === ParseTextMode.VariableAnnotation) {
@@ -284,10 +270,7 @@ export class Parser {
         } else if (parseTextMode === ParseTextMode.FunctionAnnotation) {
             parseTree = this._parseFunctionTypeAnnotation();
         } else {
-            const exprListResult = this._parseTestOrStarExpressionList(
-                /* allowAssignmentExpression */ false,
-                /* allowMultipleUnpack */ true
-            );
+            const exprListResult = this._parseTestOrStarExpressionList(/* allowAssignmentExpression */ false);
             if (exprListResult.parseError) {
                 parseTree = exprListResult.parseError;
             } else {
@@ -327,13 +310,7 @@ export class Parser {
 
         // Tokenize the file contents.
         const tokenizer = new Tokenizer();
-        this._tokenizerOutput = tokenizer.tokenize(
-            fileContents,
-            textOffset,
-            textLength,
-            initialParenDepth,
-            this._parseOptions.ipythonMode
-        );
+        this._tokenizerOutput = tokenizer.tokenize(fileContents, textOffset, textLength, initialParenDepth);
         this._tokenIndex = 0;
     }
 
@@ -453,7 +430,6 @@ export class Parser {
             this._getKeywordToken(KeywordType.Match);
             const expression = this._parseTestOrStarListAsExpression(
                 /* allowAssignmentExpression */ true,
-                /* allowMultipleUnpack */ true,
                 ErrorExpressionCategory.MissingPatternSubject,
                 Localizer.Diagnostic.expectedReturnExpr()
             );
@@ -472,7 +448,6 @@ export class Parser {
 
         const subjectExpression = this._parseTestOrStarListAsExpression(
             /* allowAssignmentExpression */ true,
-            /* allowMultipleUnpack */ true,
             ErrorExpressionCategory.MissingPatternSubject,
             Localizer.Diagnostic.expectedReturnExpr()
         );
@@ -529,9 +504,6 @@ export class Parser {
                 if (this._consumeTokenIfType(TokenType.Dedent)) {
                     if (!dedentToken.matchesIndent) {
                         this._addError(Localizer.Diagnostic.inconsistentIndent(), dedentToken);
-                    }
-                    if (dedentToken.isDedentAmbiguous) {
-                        this._addError(Localizer.Diagnostic.inconsistentTabs(), dedentToken);
                     }
                     break;
                 }
@@ -807,7 +779,6 @@ export class Parser {
 
         const patternCaptureOrValue = this._parsePatternCaptureOrValue();
         if (patternCaptureOrValue) {
-            const openParenToken = this._peekToken();
             if (
                 patternCaptureOrValue.nodeType === ParseNodeType.Error ||
                 !this._consumeTokenIfType(TokenType.OpenParenthesis)
@@ -824,7 +795,7 @@ export class Parser {
             const classPattern = PatternClassNode.create(classNameExpr, args);
 
             if (!this._consumeTokenIfType(TokenType.CloseParenthesis)) {
-                this._addError(Localizer.Diagnostic.expectedCloseParen(), openParenToken);
+                this._addError(Localizer.Diagnostic.expectedCloseParen(), this._peekToken());
 
                 // Consume the remainder of tokens on the line for error
                 // recovery.
@@ -889,7 +860,7 @@ export class Parser {
                     nextToken.type === TokenType.OpenParenthesis
                         ? Localizer.Diagnostic.expectedCloseParen()
                         : Localizer.Diagnostic.expectedCloseBracket(),
-                    nextToken
+                    this._peekToken()
                 );
                 this._consumeTokensUntilType([
                     TokenType.Colon,
@@ -906,7 +877,7 @@ export class Parser {
             if (this._consumeTokenIfType(TokenType.CloseCurlyBrace)) {
                 extendRange(mappingPattern, lastToken);
             } else {
-                this._addError(Localizer.Diagnostic.expectedCloseBrace(), nextToken);
+                this._addError(Localizer.Diagnostic.expectedCloseBrace(), this._peekToken());
                 this._consumeTokensUntilType([TokenType.Colon, TokenType.CloseCurlyBrace]);
             }
 
@@ -1235,10 +1206,6 @@ export class Parser {
                     }
 
                     if (nextToken.type === TokenType.Dedent) {
-                        if ((nextToken as DedentToken).isDedentAmbiguous) {
-                            this._addError(Localizer.Diagnostic.inconsistentTabs(), nextToken);
-                        }
-
                         indent--;
 
                         if (indent === 0) {
@@ -1311,9 +1278,6 @@ export class Parser {
                     if (!dedentToken.matchesIndent) {
                         this._addError(Localizer.Diagnostic.inconsistentIndent(), dedentToken);
                     }
-                    if (dedentToken.isDedentAmbiguous) {
-                        this._addError(Localizer.Diagnostic.inconsistentTabs(), dedentToken);
-                    }
                     break;
                 }
 
@@ -1357,27 +1321,11 @@ export class Parser {
             );
             forSuite = SuiteNode.create(this._peekToken());
         } else {
-            seqExpr = this._parseTestOrStarListAsExpression(
-                /* allowAssignmentExpression */ false,
-                /* allowMultipleUnpack */ true,
+            seqExpr = this._parseTestListAsExpression(
                 ErrorExpressionCategory.MissingExpression,
                 Localizer.Diagnostic.expectedInExpr()
             );
             forSuite = this._parseLoopSuite();
-
-            // Versions of Python earlier than 3.9 didn't allow unpack operators if the
-            // tuple wasn't enclosed in parentheses.
-            if (this._getLanguageVersion() < PythonVersion.V3_9 && !this._parseOptions.isStubFile) {
-                if (seqExpr.nodeType === ParseNodeType.Tuple && !seqExpr.enclosedInParens) {
-                    let sawStar = false;
-                    seqExpr.expressions.forEach((expr) => {
-                        if (expr.nodeType === ParseNodeType.Unpack && !sawStar) {
-                            this._addError(Localizer.Diagnostic.unpackOperatorNotAllowed(), expr);
-                            sawStar = true;
-                        }
-                    });
-                }
-            }
 
             if (this._consumeTokenIfKeyword(KeywordType.Else)) {
                 elseSuite = this._parseSuite(this._isInFunction);
@@ -1416,22 +1364,22 @@ export class Parser {
 
         const listCompNode = ListComprehensionNode.create(target);
 
-        const forIfList: ListComprehensionForIfNode[] = [compFor];
+        const compList: ListComprehensionIterNode[] = [compFor];
         while (true) {
             const compIter = this._tryParseCompForStatement() || this._tryParseCompIfStatement();
             if (!compIter) {
                 break;
             }
             compIter.parent = listCompNode;
-            forIfList.push(compIter);
+            compList.push(compIter);
         }
 
-        listCompNode.forIfNodes = forIfList;
-        if (forIfList.length > 0) {
-            forIfList.forEach((comp) => {
+        listCompNode.comprehensions = compList;
+        if (compList.length > 0) {
+            compList.forEach((comp) => {
                 comp.parent = listCompNode;
             });
-            extendRange(listCompNode, forIfList[forIfList.length - 1]);
+            extendRange(listCompNode, compList[compList.length - 1]);
         }
         return listCompNode;
     }
@@ -1492,9 +1440,7 @@ export class Parser {
         }
 
         const ifToken = this._getKeywordToken(KeywordType.If);
-        const ifExpr =
-            this._tryParseLambdaExpression() ||
-            this._parseAssignmentExpression(/* disallowAssignmentExpression */ true);
+        const ifExpr = this._tryParseLambdaExpression() || this._parseAssignmentExpression();
 
         const compIfNode = ListComprehensionIfNode.create(ifToken, ifExpr);
 
@@ -1538,16 +1484,6 @@ export class Parser {
                 break;
             }
 
-            // See if this is a Python 3.11 exception group.
-            const possibleStarToken = this._peekToken();
-            let isExceptGroup = false;
-            if (this._consumeTokenIfOperator(OperatorType.Multiply)) {
-                if (this._getLanguageVersion() < PythonVersion.V3_11 && !this._parseOptions.isStubFile) {
-                    this._addError(Localizer.Diagnostic.exceptionGroupIncompatible(), possibleStarToken);
-                }
-                isExceptGroup = true;
-            }
-
             let typeExpr: ExpressionNode | undefined;
             let symbolName: IdentifierToken | undefined;
             if (this._peekTokenType() !== TokenType.Colon) {
@@ -1582,7 +1518,7 @@ export class Parser {
             }
 
             const exceptSuite = this._parseSuite(this._isInFunction);
-            const exceptNode = ExceptNode.create(exceptToken, exceptSuite, isExceptGroup);
+            const exceptNode = ExceptNode.create(exceptToken, exceptSuite);
             if (typeExpr) {
                 exceptNode.typeExpression = typeExpr;
                 exceptNode.typeExpression.parent = exceptNode;
@@ -1636,7 +1572,6 @@ export class Parser {
             );
         }
 
-        const openParenToken = this._peekToken();
         if (!this._consumeTokenIfType(TokenType.OpenParenthesis)) {
             this._addError(Localizer.Diagnostic.expectedOpenParen(), this._peekToken());
             return ErrorNode.create(
@@ -1650,7 +1585,7 @@ export class Parser {
         const paramList = this._parseVarArgsList(TokenType.CloseParenthesis, /* allowAnnotations */ true);
 
         if (!this._consumeTokenIfType(TokenType.CloseParenthesis)) {
-            this._addError(Localizer.Diagnostic.expectedCloseParen(), openParenToken);
+            this._addError(Localizer.Diagnostic.expectedCloseParen(), this._peekToken());
             this._consumeTokensUntilType([TokenType.Colon]);
         }
 
@@ -1783,7 +1718,7 @@ export class Parser {
                     }
                     sawKeywordOnlySeparator = true;
                 } else {
-                    if (sawKeywordOnlySeparator || sawArgs) {
+                    if (sawArgs) {
                         this._addError(Localizer.Diagnostic.duplicateArgsParam(), param);
                     }
                     sawArgs = true;
@@ -1836,7 +1771,7 @@ export class Parser {
         } else if (this._consumeTokenIfOperator(OperatorType.Power)) {
             starCount = 2;
         } else if (this._consumeTokenIfOperator(OperatorType.Divide)) {
-            if (this._getLanguageVersion() < PythonVersion.V3_8 && !this._parseOptions.isStubFile) {
+            if (this._getLanguageVersion() < PythonVersion.V3_8) {
                 this._addError(Localizer.Diagnostic.positionOnlyIncompatible(), firstToken);
             }
             slashCount = 1;
@@ -1878,7 +1813,7 @@ export class Parser {
         }
 
         if (allowAnnotations && this._consumeTokenIfType(TokenType.Colon)) {
-            paramNode.typeAnnotation = this._parseTypeAnnotation(paramType === ParameterCategory.VarArgList);
+            paramNode.typeAnnotation = this._parseTypeAnnotation();
             paramNode.typeAnnotation.parent = paramNode;
             extendRange(paramNode, paramNode.typeAnnotation);
         }
@@ -1959,7 +1894,7 @@ export class Parser {
 
         if (isParenthesizedWithItemList) {
             if (!this._consumeTokenIfType(TokenType.CloseParenthesis)) {
-                this._addError(Localizer.Diagnostic.expectedCloseParen(), possibleParen);
+                this._addError(Localizer.Diagnostic.expectedCloseParen(), this._peekToken());
             }
         }
 
@@ -2086,12 +2021,11 @@ export class Parser {
         }
 
         let argList: ArgumentNode[] = [];
-        const openParenToken = this._peekToken();
         if (this._consumeTokenIfType(TokenType.OpenParenthesis)) {
-            argList = this._parseArgList().args;
+            argList = this._parseArgList();
 
             if (!this._consumeTokenIfType(TokenType.CloseParenthesis)) {
-                this._addError(Localizer.Diagnostic.expectedCloseParen(), openParenToken);
+                this._addError(Localizer.Diagnostic.expectedCloseParen(), this._peekToken());
             }
         }
 
@@ -2155,7 +2089,6 @@ export class Parser {
         if (!this._isNextTokenNeverExpression()) {
             const returnExpr = this._parseTestOrStarListAsExpression(
                 /* allowAssignmentExpression */ true,
-                /* allowMultipleUnpack */ true,
                 ErrorExpressionCategory.MissingExpression,
                 Localizer.Diagnostic.expectedReturnExpr()
             );
@@ -2200,7 +2133,6 @@ export class Parser {
                 importFromNode.wildcardToken = possibleStarToken;
                 this._containsWildcardImport = true;
             } else {
-                const openParenToken = this._peekToken();
                 const inParen = this._consumeTokenIfType(TokenType.OpenParenthesis);
                 let trailingCommaToken: Token | undefined;
 
@@ -2250,7 +2182,7 @@ export class Parser {
 
                     const nextToken = this._peekToken();
                     if (!this._consumeTokenIfType(TokenType.CloseParenthesis)) {
-                        this._addError(Localizer.Diagnostic.expectedCloseParen(), openParenToken);
+                        this._addError(Localizer.Diagnostic.expectedCloseParen(), this._peekToken());
                     } else {
                         extendRange(importFromNode, nextToken);
                     }
@@ -2533,7 +2465,6 @@ export class Parser {
         if (!this._isNextTokenNeverExpression()) {
             exprList = this._parseTestOrStarListAsExpression(
                 /* allowAssignmentExpression */ true,
-                /* allowMultipleUnpack */ true,
                 ErrorExpressionCategory.MissingExpression,
                 Localizer.Diagnostic.expectedYieldExpr()
             );
@@ -2655,7 +2586,7 @@ export class Parser {
         // that's surrounded by parens.
         if (exprListResult.list.length === 1 && !exprListResult.trailingComma) {
             if (exprListResult.list[0].nodeType === ParseNodeType.Unpack) {
-                this._addError(Localizer.Diagnostic.unpackOperatorNotAllowed(), exprListResult.list[0]);
+                this._addError(Localizer.Diagnostic.unpackNotAllowed(), exprListResult.list[0]);
             }
             return exprListResult.list[0];
         }
@@ -2709,7 +2640,6 @@ export class Parser {
 
     private _parseTestOrStarListAsExpression(
         allowAssignmentExpression: boolean,
-        allowMultipleUnpack: boolean,
         errorCategory: ErrorExpressionCategory,
         errorString: string
     ): ExpressionNode {
@@ -2717,7 +2647,7 @@ export class Parser {
             return this._handleExpressionParseError(errorCategory, errorString);
         }
 
-        const exprListResult = this._parseTestOrStarExpressionList(allowAssignmentExpression, allowMultipleUnpack);
+        const exprListResult = this._parseTestOrStarExpressionList(allowAssignmentExpression);
         if (exprListResult.parseError) {
             return exprListResult.parseError;
         }
@@ -2733,15 +2663,13 @@ export class Parser {
         return this._parseExpressionListGeneric(() => this._parseTestExpression(/* allowAssignmentExpression */ false));
     }
 
-    private _parseTestOrStarExpressionList(
-        allowAssignmentExpression: boolean,
-        allowMultipleUnpack: boolean
-    ): ListResult<ExpressionNode> {
+    private _parseTestOrStarExpressionList(allowAssignmentExpression: boolean): ListResult<ExpressionNode> {
         const exprListResult = this._parseExpressionListGeneric(() =>
             this._parseTestOrStarExpression(allowAssignmentExpression)
         );
 
-        if (!allowMultipleUnpack && !exprListResult.parseError) {
+        if (!exprListResult.parseError) {
+            // Make sure that we don't have more than one star expression in the list.
             let sawStar = false;
             for (const expr of exprListResult.list) {
                 if (expr.nodeType === ParseNodeType.Unpack) {
@@ -2815,7 +2743,7 @@ export class Parser {
     }
 
     // assign_expr: NAME := test
-    private _parseAssignmentExpression(disallowAssignmentExpression = false) {
+    private _parseAssignmentExpression() {
         const leftExpr = this._parseOrTest();
         if (leftExpr.nodeType === ParseNodeType.Error) {
             return leftExpr;
@@ -2830,7 +2758,7 @@ export class Parser {
             return leftExpr;
         }
 
-        if (!this._assignmentExpressionsAllowed || this._isParsingTypeAnnotation || disallowAssignmentExpression) {
+        if (!this._assignmentExpressionsAllowed || this._isParsingTypeAnnotation) {
             this._addError(Localizer.Diagnostic.walrusNotAllowed(), walrusToken);
         }
 
@@ -2856,7 +2784,7 @@ export class Parser {
                 break;
             }
             const rightExpr = this._parseAndTest();
-            leftExpr = this._createBinaryOperationNode(leftExpr, rightExpr, peekToken, OperatorType.Or);
+            leftExpr = BinaryOperationNode.create(leftExpr, rightExpr, peekToken, OperatorType.Or);
         }
 
         return leftExpr;
@@ -2875,7 +2803,7 @@ export class Parser {
                 break;
             }
             const rightExpr = this._parseNotTest();
-            leftExpr = this._createBinaryOperationNode(leftExpr, rightExpr, peekToken, OperatorType.And);
+            leftExpr = BinaryOperationNode.create(leftExpr, rightExpr, peekToken, OperatorType.And);
         }
 
         return leftExpr;
@@ -2886,7 +2814,7 @@ export class Parser {
         const notToken = this._peekToken();
         if (this._consumeTokenIfKeyword(KeywordType.Not)) {
             const notExpr = this._parseNotTest();
-            return this._createUnaryOperationNode(notToken, notExpr, OperatorType.Not);
+            return UnaryOperationNode.create(notToken, notExpr, OperatorType.Not);
         }
 
         return this._parseComparison();
@@ -2936,7 +2864,7 @@ export class Parser {
             }
 
             const rightExpr = this._parseComparison();
-            leftExpr = this._createBinaryOperationNode(leftExpr, rightExpr, peekToken, comparisonOperator);
+            leftExpr = BinaryOperationNode.create(leftExpr, rightExpr, peekToken, comparisonOperator);
         }
 
         return leftExpr;
@@ -2955,7 +2883,7 @@ export class Parser {
                 break;
             }
             const rightExpr = this._parseBitwiseXorExpression();
-            leftExpr = this._createBinaryOperationNode(leftExpr, rightExpr, peekToken, OperatorType.BitwiseOr);
+            leftExpr = BinaryOperationNode.create(leftExpr, rightExpr, peekToken, OperatorType.BitwiseOr);
         }
 
         return leftExpr;
@@ -2974,7 +2902,7 @@ export class Parser {
                 break;
             }
             const rightExpr = this._parseBitwiseAndExpression();
-            leftExpr = this._createBinaryOperationNode(leftExpr, rightExpr, peekToken, OperatorType.BitwiseXor);
+            leftExpr = BinaryOperationNode.create(leftExpr, rightExpr, peekToken, OperatorType.BitwiseXor);
         }
 
         return leftExpr;
@@ -2993,7 +2921,7 @@ export class Parser {
                 break;
             }
             const rightExpr = this._parseShiftExpression();
-            leftExpr = this._createBinaryOperationNode(leftExpr, rightExpr, peekToken, OperatorType.BitwiseAnd);
+            leftExpr = BinaryOperationNode.create(leftExpr, rightExpr, peekToken, OperatorType.BitwiseAnd);
         }
 
         return leftExpr;
@@ -3011,7 +2939,7 @@ export class Parser {
         while (nextOperator === OperatorType.LeftShift || nextOperator === OperatorType.RightShift) {
             this._getNextToken();
             const rightExpr = this._parseArithmeticExpression();
-            leftExpr = this._createBinaryOperationNode(leftExpr, rightExpr, peekToken, nextOperator);
+            leftExpr = BinaryOperationNode.create(leftExpr, rightExpr, peekToken, nextOperator);
             peekToken = this._peekToken();
             nextOperator = this._peekOperatorType();
         }
@@ -3035,7 +2963,7 @@ export class Parser {
                 return rightExpr;
             }
 
-            leftExpr = this._createBinaryOperationNode(leftExpr, rightExpr, peekToken, nextOperator);
+            leftExpr = BinaryOperationNode.create(leftExpr, rightExpr, peekToken, nextOperator);
             peekToken = this._peekToken();
             nextOperator = this._peekOperatorType();
         }
@@ -3061,7 +2989,7 @@ export class Parser {
         ) {
             this._getNextToken();
             const rightExpr = this._parseArithmeticFactor();
-            leftExpr = this._createBinaryOperationNode(leftExpr, rightExpr, peekToken, nextOperator);
+            leftExpr = BinaryOperationNode.create(leftExpr, rightExpr, peekToken, nextOperator);
             peekToken = this._peekToken();
             nextOperator = this._peekOperatorType();
         }
@@ -3081,7 +3009,7 @@ export class Parser {
         ) {
             this._getNextToken();
             const expression = this._parseArithmeticFactor();
-            return this._createUnaryOperationNode(nextToken, expression, nextOperator);
+            return UnaryOperationNode.create(nextToken, expression, nextOperator);
         }
 
         const leftExpr = this._parseAtomExpression();
@@ -3092,7 +3020,7 @@ export class Parser {
         const peekToken = this._peekToken();
         if (this._consumeTokenIfOperator(OperatorType.Power)) {
             const rightExpr = this._parseArithmeticFactor();
-            return this._createBinaryOperationNode(leftExpr, rightExpr, peekToken, OperatorType.Power);
+            return BinaryOperationNode.create(leftExpr, rightExpr, peekToken, OperatorType.Power);
         }
 
         return leftExpr;
@@ -3140,30 +3068,26 @@ export class Parser {
         // Consume trailers.
         while (true) {
             // Is it a function call?
-            const startOfTrailerToken = this._peekToken();
             if (this._consumeTokenIfType(TokenType.OpenParenthesis)) {
                 // Generally, function calls are not allowed within type annotations,
                 // but they are permitted in "Annotated" annotations.
                 const wasParsingTypeAnnotation = this._isParsingTypeAnnotation;
                 this._isParsingTypeAnnotation = false;
 
-                const argListResult = this._parseArgList();
-                const callNode = CallNode.create(atomExpression, argListResult.args, argListResult.trailingComma);
-
-                if (argListResult.args.length > 1 || argListResult.trailingComma) {
-                    argListResult.args.forEach((arg) => {
-                        if (arg.valueExpression.nodeType === ParseNodeType.ListComprehension) {
-                            if (!arg.valueExpression.isParenthesized) {
-                                this._addError(Localizer.Diagnostic.generatorNotParenthesized(), arg.valueExpression);
-                            }
-                        }
+                const argList = this._parseArgList();
+                const callNode = CallNode.create(atomExpression);
+                callNode.arguments = argList;
+                if (argList.length > 0) {
+                    argList.forEach((arg) => {
+                        arg.parent = callNode;
                     });
+                    extendRange(callNode, argList[argList.length - 1]);
                 }
 
                 const nextToken = this._peekToken();
                 let isArgListTerminated = false;
                 if (!this._consumeTokenIfType(TokenType.CloseParenthesis)) {
-                    this._addError(Localizer.Diagnostic.expectedCloseParen(), startOfTrailerToken);
+                    this._addError(Localizer.Diagnostic.expectedCloseParen(), this._peekToken());
 
                     // Consume the remainder of tokens on the line for error
                     // recovery.
@@ -3188,11 +3112,6 @@ export class Parser {
                 }
 
                 atomExpression = callNode;
-
-                if (atomExpression.maxChildDepth !== undefined && atomExpression.maxChildDepth >= maxChildNodeDepth) {
-                    atomExpression = ErrorNode.create(atomExpression, ErrorExpressionCategory.MaxDepthExceeded);
-                    this._addError(Localizer.Diagnostic.maxParseDepthExceeded(), atomExpression);
-                }
 
                 // If the argument list wasn't terminated, break out of the loop
                 if (!isArgListTerminated) {
@@ -3235,17 +3154,11 @@ export class Parser {
                     this._handleExpressionParseError(
                         ErrorExpressionCategory.MissingIndexCloseBracket,
                         Localizer.Diagnostic.expectedCloseBracket(),
-                        startOfTrailerToken,
                         indexNode
                     );
                 }
 
                 atomExpression = indexNode;
-
-                if (atomExpression.maxChildDepth !== undefined && atomExpression.maxChildDepth >= maxChildNodeDepth) {
-                    atomExpression = ErrorNode.create(atomExpression, ErrorExpressionCategory.MaxDepthExceeded);
-                    this._addError(Localizer.Diagnostic.maxParseDepthExceeded(), atomExpression);
-                }
             } else if (this._consumeTokenIfType(TokenType.Dot)) {
                 // Is it a member access?
                 const memberName = this._getTokenIfIdentifier();
@@ -3253,16 +3166,10 @@ export class Parser {
                     return this._handleExpressionParseError(
                         ErrorExpressionCategory.MissingMemberAccessName,
                         Localizer.Diagnostic.expectedMemberName(),
-                        startOfTrailerToken,
                         atomExpression
                     );
                 }
                 atomExpression = MemberAccessNode.create(atomExpression, NameNode.create(memberName));
-
-                if (atomExpression.maxChildDepth !== undefined && atomExpression.maxChildDepth >= maxChildNodeDepth) {
-                    atomExpression = ErrorNode.create(atomExpression, ErrorExpressionCategory.MaxDepthExceeded);
-                    this._addError(Localizer.Diagnostic.maxParseDepthExceeded(), atomExpression);
-                }
             } else {
                 break;
             }
@@ -3295,7 +3202,6 @@ export class Parser {
                 argType = ArgumentCategory.UnpackedDictionary;
             }
 
-            const startOfSubscriptIndex = this._tokenIndex;
             let valueExpr = this._parsePossibleSlice();
             let nameIdentifier: IdentifierToken | undefined;
 
@@ -3309,17 +3215,6 @@ export class Parser {
                         nameIdentifier = nameExpr.token;
                     } else {
                         this._addError(Localizer.Diagnostic.expectedParamName(), nameExpr);
-                    }
-                } else if (
-                    valueExpr.nodeType === ParseNodeType.Name &&
-                    this._peekOperatorType() === OperatorType.Walrus
-                ) {
-                    this._tokenIndex = startOfSubscriptIndex;
-                    valueExpr = this._parseTestExpression(/* allowAssignmentExpression */ true);
-
-                    // Python 3.10 and newer allow assignment expressions to be used inside of a subscript.
-                    if (!this._parseOptions.isStubFile && this._getLanguageVersion() < PythonVersion.V3_10) {
-                        this._addError(Localizer.Diagnostic.assignmentExprInSubscript(), valueExpr);
                     }
                 }
             }
@@ -3337,15 +3232,20 @@ export class Parser {
             }
             argList.push(argNode);
 
-            if (argNode.name) {
-                this._addError(Localizer.Diagnostic.keywordSubscriptIllegal(), argNode.name);
-            }
-
-            if (argType !== ArgumentCategory.Simple) {
-                const unpackAllowed =
-                    this._parseOptions.isStubFile || this._getLanguageVersion() >= PythonVersion.V3_11;
-
-                if (argType === ArgumentCategory.UnpackedDictionary || !unpackAllowed) {
+            if (supportPEP637) {
+                if (!this._parseOptions.isStubFile && this._getLanguageVersion() < PythonVersion.V3_10) {
+                    if (argNode.name) {
+                        this._addError(Localizer.Diagnostic.keywordSubscriptIllegal(), argNode.name);
+                    }
+                    if (argType !== ArgumentCategory.Simple) {
+                        this._addError(Localizer.Diagnostic.unpackedSubscriptIllegal(), argNode);
+                    }
+                }
+            } else {
+                if (argNode.name) {
+                    this._addError(Localizer.Diagnostic.keywordSubscriptIllegal(), argNode.name);
+                }
+                if (argType !== ArgumentCategory.Simple) {
                     this._addError(Localizer.Diagnostic.unpackedSubscriptIllegal(), argNode);
                 }
             }
@@ -3363,7 +3263,6 @@ export class Parser {
             const errorNode = this._handleExpressionParseError(
                 ErrorExpressionCategory.MissingIndexOrSlice,
                 Localizer.Diagnostic.expectedSliceIndex(),
-                /* targetToken */ undefined,
                 /* childNode */ undefined,
                 [TokenType.CloseBracket]
             );
@@ -3432,10 +3331,9 @@ export class Parser {
     }
 
     // arglist: argument (',' argument)*  [',']
-    private _parseArgList(): ArgListResult {
+    private _parseArgList(): ArgumentNode[] {
         const argList: ArgumentNode[] = [];
         let sawKeywordArg = false;
-        let trailingComma = false;
 
         while (true) {
             const nextTokenType = this._peekTokenType();
@@ -3447,7 +3345,6 @@ export class Parser {
                 break;
             }
 
-            trailingComma = false;
             const arg = this._parseArgument();
             if (arg.name) {
                 sawKeywordArg = true;
@@ -3459,11 +3356,9 @@ export class Parser {
             if (!this._consumeTokenIfType(TokenType.Comma)) {
                 break;
             }
-
-            trailingComma = true;
         }
 
-        return { args: argList, trailingComma };
+        return argList;
     }
 
     // argument: ( test [comp_for] |
@@ -3571,15 +3466,6 @@ export class Parser {
                 // expression is parenthesized.
                 possibleTupleNode.parenthesized = true;
             }
-
-            if (possibleTupleNode.nodeType === ParseNodeType.StringList) {
-                possibleTupleNode.isParenthesized = true;
-            }
-
-            if (possibleTupleNode.nodeType === ParseNodeType.ListComprehension) {
-                possibleTupleNode.isParenthesized = true;
-            }
-
             return possibleTupleNode;
         } else if (nextToken.type === TokenType.OpenBracket) {
             const listNode = this._parseListAtom();
@@ -3630,15 +3516,14 @@ export class Parser {
     private _handleExpressionParseError(
         category: ErrorExpressionCategory,
         errorMsg: string,
-        targetToken?: Token,
         childNode?: ExpressionNode,
         additionalStopTokens?: TokenType[]
     ): ErrorNode {
-        this._addError(errorMsg, targetToken ?? this._peekToken());
+        this._addError(errorMsg, this._peekToken());
         const expr = ErrorNode.create(this._peekToken(), category, childNode);
         const stopTokens = [TokenType.NewLine];
         if (additionalStopTokens) {
-            appendArray(stopTokens, additionalStopTokens);
+            stopTokens.push(...additionalStopTokens);
         }
         this._consumeTokensUntilType(stopTokens);
         return expr;
@@ -3689,7 +3574,6 @@ export class Parser {
                 return this._handleExpressionParseError(
                     ErrorExpressionCategory.MissingTupleCloseParen,
                     Localizer.Diagnostic.expectedCloseParen(),
-                    startParen,
                     yieldExpr
                 );
             } else {
@@ -3711,7 +3595,6 @@ export class Parser {
             return this._handleExpressionParseError(
                 ErrorExpressionCategory.MissingTupleCloseParen,
                 Localizer.Diagnostic.expectedCloseParen(),
-                startParen,
                 exprListResult.parseError ?? tupleOrExpression
             );
         } else {
@@ -3736,7 +3619,6 @@ export class Parser {
             return this._handleExpressionParseError(
                 ErrorExpressionCategory.MissingListCloseBracket,
                 Localizer.Diagnostic.expectedCloseBracket(),
-                startBracket,
                 exprListResult.parseError ?? _createList()
             );
         }
@@ -3905,7 +3787,7 @@ export class Parser {
 
         let closeCurlyBrace: Token | undefined = this._peekToken();
         if (!this._consumeTokenIfType(TokenType.CloseCurlyBrace)) {
-            this._addError(Localizer.Diagnostic.expectedCloseBrace(), startBrace);
+            this._addError(Localizer.Diagnostic.expectedCloseBrace(), this._peekToken());
             closeCurlyBrace = undefined;
         }
 
@@ -3994,7 +3876,6 @@ export class Parser {
     private _parseExpressionStatement(): ExpressionNode {
         let leftExpr = this._parseTestOrStarListAsExpression(
             /* allowAssignmentExpression */ false,
-            /* allowMultipleUnpack */ false,
             ErrorExpressionCategory.MissingExpression,
             Localizer.Diagnostic.expectedExpr()
         );
@@ -4032,7 +3913,6 @@ export class Parser {
                 this._tryParseYieldExpression() ||
                 this._parseTestOrStarListAsExpression(
                     /* allowAssignmentExpression */ false,
-                    /* allowMultipleUnpack */ true,
                     ErrorExpressionCategory.MissingExpression,
                     Localizer.Diagnostic.expectedAssignRightHandExpr()
                 );
@@ -4072,7 +3952,6 @@ export class Parser {
             this._tryParseYieldExpression() ||
             this._parseTestOrStarListAsExpression(
                 /* allowAssignmentExpression */ false,
-                /* allowMultipleUnpack */ true,
                 ErrorExpressionCategory.MissingExpression,
                 Localizer.Diagnostic.expectedAssignRightHandExpr()
             );
@@ -4135,7 +4014,7 @@ export class Parser {
         }
 
         if (!this._consumeTokenIfType(TokenType.CloseParenthesis)) {
-            this._addError(Localizer.Diagnostic.expectedCloseParen(), openParenToken);
+            this._addError(Localizer.Diagnostic.expectedCloseParen(), this._peekToken());
             this._consumeTokensUntilType([TokenType.Colon]);
         }
 
@@ -4155,7 +4034,7 @@ export class Parser {
         return FunctionAnnotationNode.create(openParenToken, isParamListEllipsis, paramAnnotations, returnType);
     }
 
-    private _parseTypeAnnotation(allowUnpack = false): ExpressionNode {
+    private _parseTypeAnnotation(): ExpressionNode {
         // Temporary set a flag that indicates we're parsing a type annotation.
         const wasParsingTypeAnnotation = this._isParsingTypeAnnotation;
         this._isParsingTypeAnnotation = true;
@@ -4163,17 +4042,8 @@ export class Parser {
         // Allow unpack operators.
         const startToken = this._peekToken();
         const isUnpack = this._consumeTokenIfOperator(OperatorType.Multiply);
-
-        if (isUnpack) {
-            if (!allowUnpack) {
-                this._addError(Localizer.Diagnostic.unpackInAnnotation(), startToken);
-            } else if (!this._parseOptions.isStubFile && this._getLanguageVersion() < PythonVersion.V3_11) {
-                this._addError(Localizer.Diagnostic.unpackedSubscriptIllegal(), startToken);
-            }
-        }
-
         let result = this._parseTestExpression(/* allowAssignmentExpression */ false);
-        if (isUnpack && allowUnpack) {
+        if (isUnpack) {
             result = UnpackNode.create(startToken, result);
         }
 
@@ -4260,9 +4130,7 @@ export class Parser {
             stringToken.start,
             stringToken.length,
             this._parseOptions,
-            ParseTextMode.VariableAnnotation,
-            /* initialParenDepth */ undefined,
-            this._typingSymbolAliases
+            ParseTextMode.VariableAnnotation
         );
 
         parseResults.diagnostics.forEach((diag) => {
@@ -4285,9 +4153,7 @@ export class Parser {
             stringToken.start,
             stringToken.length,
             this._parseOptions,
-            ParseTextMode.FunctionAnnotation,
-            /* initialParenDepth */ undefined,
-            this._typingSymbolAliases
+            ParseTextMode.FunctionAnnotation
         );
 
         parseResults.diagnostics.forEach((diag) => {
@@ -4319,8 +4185,7 @@ export class Parser {
             segmentLength,
             this._parseOptions,
             ParseTextMode.Expression,
-            /* initialParenDepth */ 1,
-            this._typingSymbolAliases
+            /* initialParenDepth */ 1
         );
 
         parseResults.diagnostics.forEach((diag) => {
@@ -4488,40 +4353,6 @@ export class Parser {
         return segmentExprLength;
     }
 
-    private _createBinaryOperationNode(
-        leftExpression: ExpressionNode,
-        rightExpression: ExpressionNode,
-        operatorToken: Token,
-        operator: OperatorType
-    ) {
-        // Determine if we're exceeding the max parse depth. If so, replace
-        // the subnode with an error node. Otherwise we risk crashing in the binder
-        // or type evaluator.
-        if (leftExpression.maxChildDepth !== undefined && leftExpression.maxChildDepth >= maxChildNodeDepth) {
-            leftExpression = ErrorNode.create(leftExpression, ErrorExpressionCategory.MaxDepthExceeded);
-            this._addError(Localizer.Diagnostic.maxParseDepthExceeded(), leftExpression);
-        }
-
-        if (rightExpression.maxChildDepth !== undefined && rightExpression.maxChildDepth >= maxChildNodeDepth) {
-            rightExpression = ErrorNode.create(rightExpression, ErrorExpressionCategory.MaxDepthExceeded);
-            this._addError(Localizer.Diagnostic.maxParseDepthExceeded(), rightExpression);
-        }
-
-        return BinaryOperationNode.create(leftExpression, rightExpression, operatorToken, operator);
-    }
-
-    private _createUnaryOperationNode(operatorToken: Token, expression: ExpressionNode, operator: OperatorType) {
-        // Determine if we're exceeding the max parse depth. If so, replace
-        // the subnode with an error node. Otherwise we risk crashing in the binder
-        // or type evaluator.
-        if (expression.maxChildDepth !== undefined && expression.maxChildDepth >= maxChildNodeDepth) {
-            expression = ErrorNode.create(expression, ErrorExpressionCategory.MaxDepthExceeded);
-            this._addError(Localizer.Diagnostic.maxParseDepthExceeded(), expression);
-        }
-
-        return UnaryOperationNode.create(operatorToken, expression, operator);
-    }
-
     private _parseStringList(): StringListNode {
         const stringList: (StringNode | FormatStringNode)[] = [];
 
@@ -4563,8 +4394,7 @@ export class Parser {
                         unescapedString.length,
                         this._parseOptions,
                         ParseTextMode.VariableAnnotation,
-                        (stringNode.strings[0].token.flags & StringTokenFlags.Triplicate) !== 0 ? 1 : 0,
-                        this._typingSymbolAliases
+                        (stringNode.strings[0].token.flags & StringTokenFlags.Triplicate) !== 0 ? 1 : 0
                     );
 
                     parseResults.diagnostics.forEach((diag) => {
@@ -4802,12 +4632,11 @@ export class Parser {
     }
 
     private _suppressErrors(callback: () => void) {
-        const errorsWereSuppressed = this._areErrorsSuppressed;
         try {
             this._areErrorsSuppressed = true;
             callback();
         } finally {
-            this._areErrorsSuppressed = errorsWereSuppressed;
+            this._areErrorsSuppressed = false;
         }
     }
 

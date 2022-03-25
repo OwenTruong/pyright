@@ -8,6 +8,7 @@
 
 import { CancellationToken, ExecuteCommandParams } from 'vscode-languageserver';
 
+import { convertUriToPath } from '../common/pathUtils';
 import { convertTextEdits } from '../common/textEditUtils';
 import { LanguageServerInterface } from '../languageServerBase';
 import { ServerCommand } from './commandController';
@@ -20,7 +21,7 @@ export class QuickActionCommand implements ServerCommand {
         if (params.arguments && params.arguments.length >= 1) {
             const docUri = params.arguments[0];
             const otherArgs = params.arguments.slice(1);
-            const filePath = this._ls.decodeTextDocumentUri(docUri);
+            const filePath = convertUriToPath(this._ls.fs, docUri);
             const workspace = await this._ls.getWorkspaceForFile(filePath);
 
             if (params.command === Commands.orderImports && workspace.disableOrganizeImports) {

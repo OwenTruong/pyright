@@ -2,7 +2,7 @@
 # used within a Protocol, as specified in PEP 544.
 
 import typing as t
-from typing import ClassVar as _ClassVar
+from typing import ClassVar as _ClassVar, Literal
 
 
 class Proto(t.Protocol):
@@ -24,6 +24,6 @@ a: Proto = ProtoImpl()
 
 
 def func1(x: Proto):
-    reveal_type(x.var1, expected_text="str")
-    reveal_type(x.var2, expected_text="str")
-    reveal_type(x.var3, expected_text="list[str]")
+    t1: Literal["str"] = reveal_type(x.var1)
+    t2: Literal["str"] = reveal_type(x.var2)
+    t3: Literal["list[str]"] = reveal_type(x.var3)

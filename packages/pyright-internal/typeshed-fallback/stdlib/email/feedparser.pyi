@@ -2,8 +2,6 @@ from email.message import Message
 from email.policy import Policy
 from typing import Callable, Generic, TypeVar, overload
 
-__all__ = ["FeedParser", "BytesFeedParser"]
-
 _M = TypeVar("_M", bound=Message)
 
 class FeedParser(Generic[_M]):

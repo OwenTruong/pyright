@@ -130,7 +130,7 @@ test('list with spaces', () => {
 ////
     `;
 
-    testIndentation(code, 17);
+    testIndentation(code, 13);
 });
 
 test('list with nested', () => {
@@ -150,7 +150,7 @@ test('list with spaces and element', () => {
 ////
     `;
 
-    testIndentation(code, 17);
+    testIndentation(code, 13);
 });
 
 test('list with nested with element', () => {

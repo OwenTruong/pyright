@@ -28,7 +28,6 @@ import { TextEditAction } from '../common/editAction';
 import { FileSystem } from '../common/fileSystem';
 import { LogTracker } from '../common/logTracker';
 import { getFileName, normalizeSlashes, stripFileExtension } from '../common/pathUtils';
-import { convertOffsetsToRange } from '../common/positionUtils';
 import * as StringUtils from '../common/stringUtils';
 import { DocumentRange, getEmptyRange, Position, TextRange } from '../common/textRange';
 import { TextRangeCollection } from '../common/textRangeCollection';
@@ -46,7 +45,6 @@ import { SignatureHelpProvider, SignatureHelpResults } from '../languageService/
 import { Localizer } from '../localization/localize';
 import { ModuleNode, NameNode } from '../parser/parseNodes';
 import { ModuleImport, ParseOptions, Parser, ParseResults } from '../parser/parser';
-import { IgnoreComment } from '../parser/tokenizer';
 import { Token } from '../parser/tokenizerTypes';
 import { AnalyzerFileInfo, ImportLookup } from './analyzerFileInfo';
 import * as AnalyzerNodeInfo from './analyzerNodeInfo';
@@ -73,7 +71,9 @@ const _maxSourceFileSize = 50 * 1024 * 1024;
 interface ResolveImportResult {
     imports: ImportResult[];
     builtinsImportResult?: ImportResult | undefined;
-    ipythonDisplayImportResult?: ImportResult | undefined;
+    typingModulePath?: string | undefined;
+    typeshedModulePath?: string | undefined;
+    collectionsModulePath?: string | undefined;
 }
 
 export class SourceFile {
@@ -147,9 +147,8 @@ export class SourceFile {
     private _parseDiagnostics: Diagnostic[] = [];
     private _bindDiagnostics: Diagnostic[] = [];
     private _checkerDiagnostics: Diagnostic[] = [];
-    private _typeIgnoreLines = new Map<number, IgnoreComment>();
-    private _typeIgnoreAll: IgnoreComment | undefined;
-    private _pyrightIgnoreLines = new Map<number, IgnoreComment>();
+    private _typeIgnoreLines: { [line: number]: boolean } = {};
+    private _typeIgnoreAll = false;
 
     // Settings that control which diagnostics should be output.
     private _diagnosticRuleSet = getBasicDiagnosticRuleSet();
@@ -169,13 +168,12 @@ export class SourceFile {
     // Do we need to perform an indexing step?
     private _indexingNeeded = true;
 
-    // Indicate whether this file is for ipython or not.
-    private _ipythonMode = false;
-
     // Information about implicit and explicit imports from this file.
     private _imports: ImportResult[] | undefined;
     private _builtinsImport: ImportResult | undefined;
-    private _ipythonDisplayImport: ImportResult | undefined;
+    private _typingModulePath: string | undefined;
+    private _typeshedModulePath: string | undefined;
+    private _collectionsModulePath: string | undefined;
 
     private _logTracker: LogTracker;
     readonly fileSystem: FileSystem;
@@ -187,8 +185,7 @@ export class SourceFile {
         isThirdPartyImport: boolean,
         isThirdPartyPyTypedPresent: boolean,
         console?: ConsoleInterface,
-        logTracker?: LogTracker,
-        ipythonMode = false
+        logTracker?: LogTracker
     ) {
         this.fileSystem = fs;
         this._console = console || new StandardConsole();
@@ -223,7 +220,6 @@ export class SourceFile {
 
         // 'FG' or 'BG' based on current thread.
         this._logTracker = logTracker ?? new LogTracker(console, isMainThread ? 'FG' : 'BG');
-        this._ipythonMode = ipythonMode;
     }
 
     getFilePath(): string {
@@ -258,19 +254,16 @@ export class SourceFile {
             includeWarningsAndErrors = false;
         }
 
-        let diagList = [...this._parseDiagnostics, ...this._bindDiagnostics, ...this._checkerDiagnostics];
-        const prefilteredDiagList = diagList;
-        const typeIgnoreLinesClone = new Map(this._typeIgnoreLines);
-        const pyrightIgnoreLinesClone = new Map(this._pyrightIgnoreLines);
+        let diagList: Diagnostic[] = [];
+        diagList = diagList.concat(this._parseDiagnostics, this._bindDiagnostics, this._checkerDiagnostics);
 
         // Filter the diagnostics based on "type: ignore" lines.
-        if (this._diagnosticRuleSet.enableTypeIgnoreComments) {
-            if (this._typeIgnoreLines.size > 0) {
+        if (options.diagnosticRuleSet.enableTypeIgnoreComments) {
+            if (Object.keys(this._typeIgnoreLines).length > 0) {
                 diagList = diagList.filter((d) => {
                     if (d.category !== DiagnosticCategory.UnusedCode && d.category !== DiagnosticCategory.Deprecated) {
                         for (let line = d.range.start.line; line <= d.range.end.line; line++) {
-                            if (this._typeIgnoreLines.has(line)) {
-                                typeIgnoreLinesClone.delete(line);
+                            if (this._typeIgnoreLines[line]) {
                                 return false;
                             }
                         }
@@ -281,134 +274,8 @@ export class SourceFile {
             }
         }
 
-        // Filter the diagnostics based on "pyright: ignore" lines.
-        if (this._pyrightIgnoreLines.size > 0) {
-            diagList = diagList.filter((d) => {
-                if (d.category !== DiagnosticCategory.UnusedCode && d.category !== DiagnosticCategory.Deprecated) {
-                    for (let line = d.range.start.line; line <= d.range.end.line; line++) {
-                        const pyrightIgnoreComment = this._pyrightIgnoreLines.get(line);
-                        if (pyrightIgnoreComment) {
-                            if (!pyrightIgnoreComment.rulesList) {
-                                pyrightIgnoreLinesClone.delete(line);
-                                return false;
-                            }
-
-                            const diagRule = d.getRule();
-                            if (!diagRule) {
-                                // If there's no diagnostic rule, it won't match
-                                // against a rules list.
-                                return true;
-                            }
-
-                            // Did we find this rule in the list?
-                            if (pyrightIgnoreComment.rulesList.find((rule) => rule.text === diagRule)) {
-                                // Update the pyrightIgnoreLinesClone to remove this rule.
-                                const oldClone = pyrightIgnoreLinesClone.get(line);
-                                if (oldClone?.rulesList) {
-                                    const filteredRulesList = oldClone.rulesList.filter(
-                                        (rule) => rule.text !== diagRule
-                                    );
-                                    if (filteredRulesList.length === 0) {
-                                        pyrightIgnoreLinesClone.delete(line);
-                                    } else {
-                                        pyrightIgnoreLinesClone.set(line, {
-                                            range: oldClone.range,
-                                            rulesList: filteredRulesList,
-                                        });
-                                    }
-                                }
-
-                                return false;
-                            }
-
-                            return true;
-                        }
-                    }
-                }
-
-                return true;
-            });
-        }
-
-        const unnecessaryTypeIgnoreDiags: Diagnostic[] = [];
-
-        if (this._diagnosticRuleSet.reportUnnecessaryTypeIgnoreComment !== 'none') {
-            const diagCategory = convertLevelToCategory(this._diagnosticRuleSet.reportUnnecessaryTypeIgnoreComment);
-
-            const prefilteredErrorList = prefilteredDiagList.filter(
-                (diag) =>
-                    diag.category === DiagnosticCategory.Error ||
-                    diag.category === DiagnosticCategory.Warning ||
-                    diag.category === DiagnosticCategory.Information
-            );
-
-            if (prefilteredErrorList.length === 0 && this._typeIgnoreAll !== undefined) {
-                unnecessaryTypeIgnoreDiags.push(
-                    new Diagnostic(
-                        diagCategory,
-                        Localizer.Diagnostic.unnecessaryTypeIgnore(),
-                        convertOffsetsToRange(
-                            this._typeIgnoreAll.range.start,
-                            this._typeIgnoreAll.range.start + this._typeIgnoreAll.range.length,
-                            this._parseResults!.tokenizerOutput.lines!
-                        )
-                    )
-                );
-            }
-
-            typeIgnoreLinesClone.forEach((ignoreComment) => {
-                if (this._parseResults?.tokenizerOutput.lines) {
-                    unnecessaryTypeIgnoreDiags.push(
-                        new Diagnostic(
-                            diagCategory,
-                            Localizer.Diagnostic.unnecessaryTypeIgnore(),
-                            convertOffsetsToRange(
-                                ignoreComment.range.start,
-                                ignoreComment.range.start + ignoreComment.range.length,
-                                this._parseResults!.tokenizerOutput.lines!
-                            )
-                        )
-                    );
-                }
-            });
-
-            pyrightIgnoreLinesClone.forEach((ignoreComment) => {
-                if (this._parseResults?.tokenizerOutput.lines) {
-                    if (!ignoreComment.rulesList) {
-                        unnecessaryTypeIgnoreDiags.push(
-                            new Diagnostic(
-                                diagCategory,
-                                Localizer.Diagnostic.unnecessaryPyrightIgnore(),
-                                convertOffsetsToRange(
-                                    ignoreComment.range.start,
-                                    ignoreComment.range.start + ignoreComment.range.length,
-                                    this._parseResults!.tokenizerOutput.lines!
-                                )
-                            )
-                        );
-                    } else {
-                        ignoreComment.rulesList.forEach((unusedRule) => {
-                            unnecessaryTypeIgnoreDiags.push(
-                                new Diagnostic(
-                                    diagCategory,
-                                    Localizer.Diagnostic.unnecessaryPyrightIgnoreRule().format({
-                                        name: unusedRule.text,
-                                    }),
-                                    convertOffsetsToRange(
-                                        unusedRule.range.start,
-                                        unusedRule.range.start + unusedRule.range.length,
-                                        this._parseResults!.tokenizerOutput.lines!
-                                    )
-                                )
-                            );
-                        });
-                    }
-                }
-            });
-        }
-
-        if (this._diagnosticRuleSet.reportImportCycles !== 'none' && this._circularDependencies.length > 0) {
-            const category = convertLevelToCategory(this._diagnosticRuleSet.reportImportCycles);
+        if (options.diagnosticRuleSet.reportImportCycles !== 'none' && this._circularDependencies.length > 0) {
+            const category = convertLevelToCategory(options.diagnosticRuleSet.reportImportCycles);
 
             this._circularDependencies.forEach((cirDep) => {
                 diagList.push(
@@ -442,20 +309,12 @@ export class SourceFile {
         }
 
         // If there is a "type: ignore" comment at the top of the file, clear
-        // the diagnostic list of all error, warning, and information diagnostics.
-        if (this._diagnosticRuleSet.enableTypeIgnoreComments) {
-            if (this._typeIgnoreAll !== undefined) {
-                diagList = diagList.filter(
-                    (diag) =>
-                        diag.category !== DiagnosticCategory.Error &&
-                        diag.category !== DiagnosticCategory.Warning &&
-                        diag.category !== DiagnosticCategory.Information
-                );
+        // the diagnostic list.
+        if (options.diagnosticRuleSet.enableTypeIgnoreComments) {
+            if (this._typeIgnoreAll) {
+                diagList = [];
             }
         }
-
-        // Now add in the "unnecessary type ignore" diagnostics.
-        diagList = diagList.concat(unnecessaryTypeIgnoreDiags);
 
         // If we're not returning any diagnostics, filter out all of
         // the errors and warnings, leaving only the unreachable code
@@ -476,10 +335,6 @@ export class SourceFile {
 
     getBuiltinsImport(): ImportResult | undefined {
         return this._builtinsImport;
-    }
-
-    getIPythonDisplayImport(): ImportResult | undefined {
-        return this._ipythonDisplayImport;
     }
 
     getModuleSymbolTable(): SymbolTable | undefined {
@@ -530,16 +385,16 @@ export class SourceFile {
         this._isBindingNeeded = true;
     }
 
-    markDirty(indexingNeeded = true): void {
+    markDirty(): void {
         this._fileContentsVersion++;
         this._isCheckingNeeded = true;
         this._isBindingNeeded = true;
-        this._indexingNeeded = indexingNeeded;
+        this._indexingNeeded = true;
         this._moduleSymbolTable = undefined;
         this._cachedIndexResults = undefined;
     }
 
-    markReanalysisRequired(forceRebinding: boolean): void {
+    markReanalysisRequired(): void {
         // Keep the parse info, but reset the analysis to the beginning.
         this._isCheckingNeeded = true;
 
@@ -548,15 +403,13 @@ export class SourceFile {
         if (this._parseResults) {
             if (
                 this._parseResults.containsWildcardImport ||
-                AnalyzerNodeInfo.getDunderAllInfo(this._parseResults.parseTree) !== undefined ||
-                forceRebinding
+                AnalyzerNodeInfo.getDunderAllInfo(this._parseResults.parseTree) !== undefined
             ) {
-                // We don't need to rebuild index data since wildcard
-                // won't affect user file indices. User file indices
-                // don't contain import alias info.
                 this._parseTreeNeedsCleaning = true;
                 this._isBindingNeeded = true;
+                this._indexingNeeded = true;
                 this._moduleSymbolTable = undefined;
+                this._cachedIndexResults = undefined;
             }
         }
     }
@@ -730,7 +583,6 @@ export class SourceFile {
             const execEnvironment = configOptions.findExecEnvironment(this._filePath);
 
             const parseOptions = new ParseOptions();
-            parseOptions.ipythonMode = this._ipythonMode;
             if (this._filePath.endsWith('pyi')) {
                 parseOptions.isStubFile = true;
             }
@@ -745,7 +597,6 @@ export class SourceFile {
                 this._parseResults = parseResults;
                 this._typeIgnoreLines = this._parseResults.tokenizerOutput.typeIgnoreLines;
                 this._typeIgnoreAll = this._parseResults.tokenizerOutput.typeIgnoreAll;
-                this._pyrightIgnoreLines = this._parseResults.tokenizerOutput.pyrightIgnoreLines;
 
                 // Resolve imports.
                 timingStats.resolveImportsTime.timeOperation(() => {
@@ -757,7 +608,9 @@ export class SourceFile {
 
                     this._imports = importResult.imports;
                     this._builtinsImport = importResult.builtinsImportResult;
-                    this._ipythonDisplayImport = importResult.ipythonDisplayImportResult;
+                    this._typingModulePath = importResult.typingModulePath;
+                    this._typeshedModulePath = importResult.typeshedModulePath;
+                    this._collectionsModulePath = importResult.collectionsModulePath;
 
                     this._parseDiagnostics = diagSink.fetchAndClear();
                 });
@@ -790,19 +643,16 @@ export class SourceFile {
                     tokenizerOutput: {
                         tokens: new TextRangeCollection<Token>([]),
                         lines: new TextRangeCollection<TextRange>([]),
-                        typeIgnoreAll: undefined,
-                        typeIgnoreLines: new Map<number, IgnoreComment>(),
-                        pyrightIgnoreLines: new Map<number, IgnoreComment>(),
+                        typeIgnoreAll: false,
+                        typeIgnoreLines: {},
                         predominantEndOfLineSequence: '\n',
                         predominantTabSequence: '    ',
                         predominantSingleQuoteCharacter: "'",
                     },
                     containsWildcardImport: false,
-                    typingSymbolAliases: new Map<string, string>(),
                 };
                 this._imports = undefined;
                 this._builtinsImport = undefined;
-                this._ipythonDisplayImport = undefined;
 
                 const diagSink = new DiagnosticSink();
                 diagSink.addError(
@@ -869,28 +719,6 @@ export class SourceFile {
             position,
             filter,
             evaluator,
-            token
-        );
-    }
-
-    getTypeDefinitionsForPosition(
-        sourceMapper: SourceMapper,
-        position: Position,
-        evaluator: TypeEvaluator,
-        filePath: string,
-        token: CancellationToken
-    ): DocumentRange[] | undefined {
-        // If we have no completed analysis job, there's nothing to do.
-        if (!this._parseResults) {
-            return undefined;
-        }
-
-        return DefinitionProvider.getTypeDefinitionsForPosition(
-            sourceMapper,
-            this._parseResults,
-            position,
-            evaluator,
-            filePath,
             token
         );
     }
@@ -1208,7 +1036,7 @@ export class SourceFile {
         });
     }
 
-    check(importResolver: ImportResolver, evaluator: TypeEvaluator) {
+    check(evaluator: TypeEvaluator) {
         assert(!this.isParseRequired(), 'Check called before parsing');
         assert(!this.isBindingRequired(), 'Check called before binding');
         assert(!this._isBindingInProgress, 'Check called while binding in progress');
@@ -1218,7 +1046,7 @@ export class SourceFile {
         return this._logTracker.log(`checking: ${this._getPathForLogging(this._filePath)}`, () => {
             try {
                 timingStats.typeCheckerTime.timeOperation(() => {
-                    const checker = new Checker(importResolver, evaluator, this._parseResults!.parseTree);
+                    const checker = new Checker(this._parseResults!.parseTree, evaluator);
                     checker.check();
                     this._isCheckingNeeded = false;
 
@@ -1258,10 +1086,6 @@ export class SourceFile {
         });
     }
 
-    test_enableIPythonMode(enable: boolean) {
-        this._ipythonMode = enable;
-    }
-
     private _buildFileInfo(
         configOptions: ConfigOptions,
         fileContents: string,
@@ -1275,12 +1099,14 @@ export class SourceFile {
             importLookup,
             futureImports: this._parseResults!.futureImports,
             builtinsScope,
+            typingModulePath: this._typingModulePath,
+            typeshedModulePath: this._typeshedModulePath,
+            collectionsModulePath: this._collectionsModulePath,
             diagnosticSink: analysisDiagnostics,
             executionEnvironment: configOptions.findExecEnvironment(this._filePath),
             diagnosticRuleSet: this._diagnosticRuleSet,
             fileContents,
             lines: this._parseResults!.tokenizerOutput.lines,
-            typingSymbolAliases: this._parseResults!.typingSymbolAliases,
             filePath: this._filePath,
             moduleName: this._moduleName,
             isStubFile: this._isStubFile,
@@ -1288,7 +1114,6 @@ export class SourceFile {
             isTypingExtensionsStubFile: this._isTypingExtensionsStubFile,
             isBuiltInStubFile: this._isBuiltInStubFile,
             isInPyTypedPackage: this._isThirdPartyPyTypedPresent,
-            isIPythonMode: this._ipythonMode,
             accessedSymbolMap: new Map<number, true>(),
         };
         return fileInfo;
@@ -1311,42 +1136,57 @@ export class SourceFile {
     ): ResolveImportResult {
         const imports: ImportResult[] = [];
 
-        const resolveAndAddIfNotSelf = (nameParts: string[], skipMissingImport = false) => {
-            const importResult = importResolver.resolveImport(this._filePath, execEnv, {
-                leadingDots: 0,
-                nameParts,
-                importedSymbols: undefined,
-            });
-
-            if (skipMissingImport && !importResult.isImportFound) {
-                return undefined;
-            }
-
-            // Avoid importing module from the module file itself.
-            if (importResult.resolvedPaths.length === 0 || importResult.resolvedPaths[0] !== this._filePath) {
-                imports.push(importResult);
-                return importResult;
-            }
-
-            return undefined;
-        };
-
         // Always include an implicit import of the builtins module.
-        let builtinsImportResult: ImportResult | undefined;
+        let builtinsImportResult: ImportResult | undefined = importResolver.resolveImport(this._filePath, execEnv, {
+            leadingDots: 0,
+            nameParts: ['builtins'],
+            importedSymbols: undefined,
+        });
 
-        // If this is a project source file (not a stub), try to resolve
-        // the __builtins__ stub first.
-        if (!this._isThirdPartyImport && !this._isStubFile) {
-            builtinsImportResult = resolveAndAddIfNotSelf(['__builtins__'], /*skipMissingImport*/ true);
+        // Avoid importing builtins from the builtins.pyi file itself.
+        if (
+            builtinsImportResult.resolvedPaths.length === 0 ||
+            builtinsImportResult.resolvedPaths[0] !== this.getFilePath()
+        ) {
+            imports.push(builtinsImportResult);
+        } else {
+            builtinsImportResult = undefined;
         }
 
-        if (!builtinsImportResult) {
-            builtinsImportResult = resolveAndAddIfNotSelf(['builtins']);
+        // Always include an implicit import of the typing module.
+        const typingImportResult: ImportResult | undefined = importResolver.resolveImport(this._filePath, execEnv, {
+            leadingDots: 0,
+            nameParts: ['typing'],
+            importedSymbols: undefined,
+        });
+
+        // Avoid importing typing from the typing.pyi file itself.
+        let typingModulePath: string | undefined;
+        if (
+            typingImportResult.resolvedPaths.length === 0 ||
+            typingImportResult.resolvedPaths[0] !== this.getFilePath()
+        ) {
+            imports.push(typingImportResult);
+            typingModulePath = typingImportResult.resolvedPaths[0];
         }
 
-        const ipythonDisplayImportResult = this._ipythonMode
-            ? resolveAndAddIfNotSelf(['IPython', 'display'])
-            : undefined;
+        // Always include an implicit import of the _typeshed module.
+        const typeshedImportResult: ImportResult | undefined = importResolver.resolveImport(this._filePath, execEnv, {
+            leadingDots: 0,
+            nameParts: ['_typeshed'],
+            importedSymbols: undefined,
+        });
+
+        let typeshedModulePath: string | undefined;
+        if (
+            typeshedImportResult.resolvedPaths.length === 0 ||
+            typeshedImportResult.resolvedPaths[0] !== this.getFilePath()
+        ) {
+            imports.push(typeshedImportResult);
+            typeshedModulePath = typeshedImportResult.resolvedPaths[0];
+        }
+
+        let collectionsModulePath: string | undefined;
 
         for (const moduleImport of moduleImports) {
             const importResult = importResolver.resolveImport(this._filePath, execEnv, {
@@ -1354,6 +1194,15 @@ export class SourceFile {
                 nameParts: moduleImport.nameParts,
                 importedSymbols: moduleImport.importedSymbols,
             });
+
+            // If the file imports the stdlib 'collections' module, stash
+            // away its file path. The type analyzer may need this to
+            // access types defined in the collections module.
+            if (importResult.isImportFound && importResult.isTypeshedFile) {
+                if (moduleImport.nameParts.length >= 1 && moduleImport.nameParts[0] === 'collections') {
+                    collectionsModulePath = importResult.resolvedPaths[importResult.resolvedPaths.length - 1];
+                }
+            }
 
             imports.push(importResult);
 
@@ -1366,7 +1215,9 @@ export class SourceFile {
         return {
             imports,
             builtinsImportResult,
-            ipythonDisplayImportResult,
+            typingModulePath,
+            typeshedModulePath,
+            collectionsModulePath,
         };
     }
 

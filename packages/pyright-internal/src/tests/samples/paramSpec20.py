@@ -1,7 +1,7 @@
 # This sample tests the handling of class specialization expressions
 # that provide signatures for ParamSpecs.
 
-from typing import Any, Callable, Concatenate, Generic, ParamSpec, TypeVar
+from typing import Any, Callable, Concatenate, Generic, Literal, ParamSpec, TypeVar
 
 
 T = TypeVar("T")
@@ -54,10 +54,12 @@ class Y(Generic[P2]):
 
 
 y1 = Y(x4)
-reveal_type(y1, expected_text="Y[(x: X[int, (...)])]")
+t_y1: Literal["Y[(x: X[int, (*args: Any, **kwargs: Any)])]"] = reveal_type(y1)
 
 y2 = y1.m1()
-reveal_type(y2, expected_text="X[int, (float, x: X[int, (...)])]")
+t_y2: Literal["X[int, (float, x: X[int, (*args: Any, **kwargs: Any)])]"] = reveal_type(
+    y2
+)
 
 
 class Z(Generic[P1]):

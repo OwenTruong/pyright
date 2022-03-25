@@ -15,11 +15,12 @@ class Foo(Generic[_T]):
     def func1(self, a: _T):
         pass
 
-    def func2(self, y: _T):
+    def func2(self):
         x: int = 3
         # This should generate an error
         self.func1(x)
 
+        y = Bar()
         self.func1(y)
 
         z: Any = 3

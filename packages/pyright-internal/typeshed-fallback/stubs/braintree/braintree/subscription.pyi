@@ -17,12 +17,10 @@ class Subscription(Resource):
     class TrialDurationUnit:
         Day: str
         Month: str
-
     class Source:
         Api: str
         ControlPanel: str
         Recurring: str
-
     class Status:
         Active: str
         Canceled: str

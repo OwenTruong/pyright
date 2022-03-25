@@ -85,9 +85,3 @@ needs_function1(callback7)
 needs_function1(callback8)
 
 needs_function1(callback9)
-
-
-import typing
-
-# This should generate an error because modules are not callable.
-typing()

@@ -18,5 +18,5 @@ class B:
 
 a, b = A(), B()
 
-v1 = a @ b
-v2 = b @ a
+a @ b
+b @ a

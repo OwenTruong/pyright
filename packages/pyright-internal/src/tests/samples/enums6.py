@@ -3,6 +3,7 @@
 # They should not be treated as enum objects.
 
 from enum import Enum
+from typing import Literal
 
 
 class Descriptor:
@@ -26,8 +27,8 @@ class MyEnum(Enum):
 
 
 baz = 123 + MyEnum.ENTRY.foo
-reveal_type(baz, expected_text="int")
+t_baz: Literal["int"] = reveal_type(baz)
 
-reveal_type(MyEnum._exempt_, expected_text="int")
+t_exempt: Literal["int"] = reveal_type(MyEnum._exempt_)
 
-reveal_type(MyEnum.desc, expected_text="complex")
+t_desc: Literal["complex"] = reveal_type(MyEnum.desc)

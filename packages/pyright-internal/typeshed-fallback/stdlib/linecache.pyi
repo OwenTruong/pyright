@@ -1,13 +1,7 @@
-import sys
-from typing import Any, Protocol
+from typing import Any, Dict, List, Protocol, Tuple
 
-if sys.version_info >= (3, 9):
-    __all__ = ["getline", "clearcache", "checkcache", "lazycache"]
-else:
-    __all__ = ["getline", "clearcache", "checkcache"]
-
-_ModuleGlobals = dict[str, Any]
-_ModuleMetadata = tuple[int, float, list[str], str]
+_ModuleGlobals = Dict[str, Any]
+_ModuleMetadata = Tuple[int, float, List[str], str]
 
 class _SourceLoader(Protocol):
     def __call__(self) -> str | None: ...

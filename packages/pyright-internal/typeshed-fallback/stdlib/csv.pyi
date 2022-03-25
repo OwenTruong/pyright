@@ -6,7 +6,6 @@ from _csv import (
     QUOTE_NONNUMERIC as QUOTE_NONNUMERIC,
     Dialect as Dialect,
     Error as Error,
-    __version__ as __version__,
     _DialectLike,
     _reader,
     _writer,
@@ -18,38 +17,13 @@ from _csv import (
     unregister_dialect as unregister_dialect,
     writer as writer,
 )
-from _typeshed import Self
 from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
-from typing import Any, Generic, TypeVar, overload
+from typing import Any, Generic, Type, TypeVar, overload
 
 if sys.version_info >= (3, 8):
-    from builtins import dict as _DictReadMapping
+    from typing import Dict as _DictReadMapping
 else:
     from collections import OrderedDict as _DictReadMapping
-
-__all__ = [
-    "QUOTE_MINIMAL",
-    "QUOTE_ALL",
-    "QUOTE_NONNUMERIC",
-    "QUOTE_NONE",
-    "Error",
-    "Dialect",
-    "__doc__",
-    "excel",
-    "excel_tab",
-    "field_size_limit",
-    "reader",
-    "writer",
-    "register_dialect",
-    "get_dialect",
-    "list_dialects",
-    "Sniffer",
-    "unregister_dialect",
-    "__version__",
-    "DictReader",
-    "DictWriter",
-    "unix_dialect",
-]
 
 _T = TypeVar("_T")
 
@@ -101,7 +75,7 @@ class DictReader(Generic[_T], Iterator[_DictReadMapping[_T, str]]):
         *args: Any,
         **kwds: Any,
     ) -> None: ...
-    def __iter__(self: Self) -> Self: ...
+    def __iter__(self) -> DictReader[_T]: ...
     def __next__(self) -> _DictReadMapping[_T, str]: ...
 
 class DictWriter(Generic[_T]):
@@ -123,12 +97,11 @@ class DictWriter(Generic[_T]):
         def writeheader(self) -> Any: ...
     else:
         def writeheader(self) -> None: ...
-
     def writerow(self, rowdict: Mapping[_T, Any]) -> Any: ...
     def writerows(self, rowdicts: Iterable[Mapping[_T, Any]]) -> None: ...
 
-class Sniffer:
+class Sniffer(object):
     preferred: list[str]
     def __init__(self) -> None: ...
-    def sniff(self, sample: str, delimiters: str | None = ...) -> type[Dialect]: ...
+    def sniff(self, sample: str, delimiters: str | None = ...) -> Type[Dialect]: ...
     def has_header(self, sample: str) -> bool: ...

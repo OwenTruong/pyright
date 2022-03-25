@@ -19,7 +19,6 @@ import * as debug from '../../../common/debug';
 import { createDeferred } from '../../../common/deferred';
 import { FileSystem } from '../../../common/fileSystem';
 import { Range } from '../../../common/textRange';
-import { UriParser } from '../../../common/uriParser';
 import {
     LanguageServerInterface,
     MessageAction,
@@ -33,7 +32,7 @@ import { HostSpecificFeatures } from './testState';
 
 export class TestFeatures implements HostSpecificFeatures {
     importResolverFactory: ImportResolverFactory = AnalyzerService.createImportResolver;
-    runIndexer(workspace: WorkspaceServiceInstance, noStdLib: boolean, options?: string): void {
+    runIndexer(workspace: WorkspaceServiceInstance, noStdLib: boolean): void {
         /* empty */
     }
     getCodeActionsForPosition(
@@ -53,11 +52,9 @@ export class TestFeatures implements HostSpecificFeatures {
 export class TestLanguageService implements LanguageServerInterface {
     private readonly _workspace: WorkspaceServiceInstance;
     private readonly _defaultWorkspace: WorkspaceServiceInstance;
-    private readonly _uriParser: UriParser;
 
     constructor(workspace: WorkspaceServiceInstance, readonly console: ConsoleInterface, readonly fs: FileSystem) {
         this._workspace = workspace;
-        this._uriParser = new UriParser(this.fs);
         this._defaultWorkspace = {
             workspaceName: '',
             rootPath: '',
@@ -74,9 +71,6 @@ export class TestLanguageService implements LanguageServerInterface {
             disableOrganizeImports: false,
             isInitialized: createDeferred<boolean>(),
         };
-    }
-    decodeTextDocumentUri(uriString: string): string {
-        return this._uriParser.decodeTextDocumentUri(uriString);
     }
 
     getWorkspaceForFile(filePath: string): Promise<WorkspaceServiceInstance> {

@@ -113,24 +113,6 @@ export const enum EvaluatorFlags {
 
     // 'Generic' cannot be used without type arguments in this context.
     DisallowNakedGeneric = 1 << 18,
-
-    // The node is not parsed by the interpreter because it is within
-    // a comment or a string literal.
-    NotParsedByInterpreter = 1 << 19,
-
-    // Required and NotRequired are allowed in this context.
-    RequiredAllowed = 1 << 20,
-
-    // Allow Unpack annotation for a tuple or TypeVarTuple.
-    AllowUnpackedTupleOrTypeVarTuple = 1 << 21,
-
-    // Even though an expression is enclosed in a string literal,
-    // the interpreter (within a source file, not a stub) still
-    // parses the expression and generates parse errors.
-    InterpreterParsesStringLiteral = 1 << 22,
-
-    // Allow Unpack annotation for TypedDict.
-    AllowUnpackedTypedDict = 1 << 23,
 }
 
 export interface TypeArgumentResult {
@@ -163,17 +145,6 @@ export interface TypeResult {
     // "super" call can specify a different class or object to
     // bind.
     bindToType?: ClassType | TypeVarType | undefined;
-
-    // Indicates that the type comes from a super() call.
-    isSuperCall?: boolean;
-
-    // Is member a descriptor object that is asymmetric with respect
-    // to __get__ and __set__ types?
-    isAsymmetricDescriptor?: boolean;
-
-    // Is the type wrapped in a "Required" or "NotRequired" class?
-    isRequired?: boolean;
-    isNotRequired?: boolean;
 }
 
 export interface EvaluatorUsage {
@@ -249,7 +220,6 @@ export interface ValidateArgTypeParams {
     errorNode: ExpressionNode;
     paramName?: string | undefined;
     mapsToVarArgList?: boolean | undefined;
-    expectingType?: boolean;
 }
 
 export interface AnnotationTypeOptions {
@@ -258,22 +228,12 @@ export interface AnnotationTypeOptions {
     allowClassVar?: boolean;
     associateTypeVarsWithScope?: boolean;
     allowTypeVarTuple?: boolean;
-    allowParamSpec?: boolean;
     disallowRecursiveTypeAlias?: boolean;
-    allowUnpackedTypedDict?: boolean;
-    allowUnpackedTuple?: boolean;
-    notParsedByInterpreter?: boolean;
 }
 
 export interface ExpectedTypeResult {
     type: Type;
     node: ParseNode;
-}
-
-export interface FunctionResult {
-    returnType: Type;
-    argumentErrors: boolean;
-    isTypeIncomplete: boolean;
 }
 
 export interface TypeEvaluator {
@@ -284,21 +244,12 @@ export interface TypeEvaluator {
     getTypeOfAnnotation: (node: ExpressionNode, options?: AnnotationTypeOptions) => Type;
     getTypeOfClass: (node: ClassNode) => ClassTypeResult | undefined;
     getTypeOfFunction: (node: FunctionNode) => FunctionTypeResult | undefined;
-    getTypeForExpressionExpectingType: (
-        node: ExpressionNode,
-        allowFinal?: boolean,
-        allowRequired?: boolean
-    ) => TypeResult;
+    getTypeForExpressionExpectingType: (node: ExpressionNode, allowFinal: boolean) => TypeResult;
     evaluateTypeForSubnode: (subnode: ParseNode, callback: () => void) => TypeResult | undefined;
     evaluateTypesForStatement: (node: ParseNode) => void;
     evaluateTypesForMatchNode: (node: MatchNode) => void;
     evaluateTypesForCaseNode: (node: CaseNode) => void;
     evaluateTypeOfParameter: (node: ParameterNode) => void;
-
-    canBeTruthy: (type: Type) => boolean;
-    canBeFalsy: (type: Type) => boolean;
-    removeTruthinessFromType: (type: Type) => Type;
-    removeFalsinessFromType: (type: Type) => Type;
 
     getExpectedType: (node: ExpressionNode) => ExpectedTypeResult | undefined;
     verifyRaiseExceptionType: (node: RaiseNode) => void;
@@ -306,10 +257,9 @@ export interface TypeEvaluator {
 
     isAfterNodeReachable: (node: ParseNode) => boolean;
     isNodeReachable: (node: ParseNode, sourceNode: ParseNode | undefined) => boolean;
-    isAsymmetricDescriptorAssignment: (node: ParseNode) => boolean;
     suppressDiagnostics: (node: ParseNode, callback: () => void) => void;
 
-    getDeclarationsForNameNode: (node: NameNode, skipUnreachableCode?: boolean) => Declaration[] | undefined;
+    getDeclarationsForNameNode: (node: NameNode) => Declaration[] | undefined;
     getTypeForDeclaration: (declaration: Declaration) => Type | undefined;
     resolveAliasDeclaration: (
         declaration: Declaration,
@@ -324,7 +274,6 @@ export interface TypeEvaluator {
     getTypeFromIterable: (type: Type, isAsync: boolean, errorNode: ParseNode | undefined) => Type | undefined;
     getTypeFromIterator: (type: Type, isAsync: boolean, errorNode: ParseNode | undefined) => Type | undefined;
     getGetterTypeFromProperty: (propertyClass: ClassType, inferTypeIfNeeded: boolean) => Type | undefined;
-    getTypeForArgument: (arg: FunctionArgument) => TypeArgumentResult;
     markNamesAccessed: (node: ParseNode, names: string[]) => void;
     getScopeIdForNode: (node: ParseNode) => string;
     makeTopLevelTypeVarsConcrete: (type: Type) => Type;
@@ -337,7 +286,7 @@ export interface TypeEvaluator {
         type: ClassType,
         expectedType: Type,
         typeVarMap: TypeVarMap,
-        liveTypeVarScopes: TypeVarScopeId[] | undefined
+        liveTypeVarScopes: TypeVarScopeId[]
     ) => boolean;
     lookUpSymbolRecursive: (node: ParseNode, name: string, honorCodeFlow: boolean) => SymbolWithScope | undefined;
     getDeclaredTypeOfSymbol: (symbol: Symbol) => Type | undefined;
@@ -347,7 +296,7 @@ export interface TypeEvaluator {
         usageNode?: NameNode,
         useLastDecl?: boolean
     ) => EffectiveTypeResult;
-    getInferredTypeOfDeclaration: (symbol: Symbol, decl: Declaration) => Type | undefined;
+    getInferredTypeOfDeclaration: (decl: Declaration) => Type | undefined;
     getDeclaredTypeForExpression: (expression: ExpressionNode, usage?: EvaluatorUsage) => Type | undefined;
     getFunctionDeclaredReturnType: (node: FunctionNode) => Type | undefined;
     getFunctionInferredReturnType: (type: FunctionType, args?: ValidateArgTypeParams[]) => Type;
@@ -377,17 +326,11 @@ export interface TypeEvaluator {
     ) => Type | undefined;
     bindFunctionToClassOrObject: (
         baseType: ClassType | undefined,
-        memberType: FunctionType | OverloadedFunctionType,
-        memberClass?: ClassType,
-        errorNode?: ParseNode,
-        recursionCount?: number,
-        treatConstructorAsClassMember?: boolean,
-        firstParamType?: ClassType | TypeVarType
+        memberType: FunctionType | OverloadedFunctionType
     ) => FunctionType | OverloadedFunctionType | undefined;
     getCallSignatureInfo: (node: CallNode, activeIndex: number, activeOrFake: boolean) => CallSignatureInfo | undefined;
     getTypeAnnotationForParameter: (node: FunctionNode, paramIndex: number) => ExpressionNode | undefined;
     getAbstractMethods: (classType: ClassType) => AbstractMethod[];
-    narrowConstrainedTypeVar: (node: ParseNode, typeVar: TypeVarType) => Type | undefined;
 
     canAssignType: (
         destType: Type,
@@ -412,7 +355,6 @@ export interface TypeEvaluator {
     ) => void;
     getBuiltInObject: (node: ParseNode, name: string, typeArguments?: Type[]) => Type;
     getTypingType: (node: ParseNode, symbolName: string) => Type | undefined;
-    inferReturnTypeIfNecessary: (type: Type) => void;
 
     addError: (message: string, node: ParseNode) => Diagnostic | undefined;
     addWarning: (message: string, node: ParseNode) => Diagnostic | undefined;
@@ -439,7 +381,6 @@ export interface TypeEvaluator {
 
     getTypeCacheSize: () => number;
     useSpeculativeMode: <T>(speculativeNode: ParseNode, callback: () => T) => T;
-    setTypeForNode: (node: ParseNode, type?: Type, flags?: EvaluatorFlags) => void;
 
     checkForCancellation: () => void;
 }

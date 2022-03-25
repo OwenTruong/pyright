@@ -3,7 +3,7 @@
 
 # pyright: reportMissingModuleSource=false
 
-from typing import Any, Callable, Protocol, Union
+from typing import Any, Callable, Literal, Protocol, Union
 from typing_extensions import TypeVarTuple, Unpack
 
 _Xs = TypeVarTuple("_Xs")
@@ -46,9 +46,9 @@ def callback7(a: int, b: str, c: str, d: str, *args: Any) -> int:
 
 
 c1 = func1(callback1)
-reveal_type(c1, expected_text="() -> int")
+t_c1: Literal["() -> int"] = reveal_type(c1)
 c1_1 = c1()
-reveal_type(c1_1, expected_text="int")
+t_c1_1: Literal["int"] = reveal_type(c1_1)
 
 # This should generate an error.
 c2 = func1(callback2)
@@ -57,9 +57,9 @@ c2 = func1(callback2)
 c3 = func2(callback3)
 
 c4 = func1(callback4)
-reveal_type(c4, expected_text="(complex, str) -> int")
+t_c4: Literal["(complex, str) -> int"] = reveal_type(c4)
 c4_1 = c4(3j, "hi")
-reveal_type(c4_1, expected_text="int")
+t_c4_1: Literal["int"] = reveal_type(c4_1)
 
 # This should generate an error.
 c4_2 = c4(3j)
@@ -68,19 +68,19 @@ c4_2 = c4(3j)
 c4_3 = c4(3j, "hi", 4)
 
 c5 = func1(callback5)
-reveal_type(c5, expected_text="(*_Xs@callback5) -> int")
+t_c5: Literal["(*_Xs@callback5) -> int"] = reveal_type(c5)
 
+# This should generate an error.
 c6_1 = func1(callback6)
-reveal_type(c6_1, expected_text="(*Any) -> int")
 
+# This should generate an error.
 c6_2 = func2(callback6)
-reveal_type(c6_2, expected_text="(int, *Any) -> int")
 
+# This should generate an error.
 c7_1 = func1(callback7)
-reveal_type(c7_1, expected_text="(str, str, str, *Any) -> int")
 
+# This should generate an error.
 c7_2 = func2(callback7)
-reveal_type(c7_2, expected_text="(int, str, str, str, *Any) -> int")
 
 
 class CallbackA(Protocol[Unpack[_Xs]]):
@@ -93,7 +93,7 @@ def func3(func: CallbackA[Unpack[_Xs]]) -> Callable[[Unpack[_Xs]], int]:
 
 
 d1 = func3(callback1)
-reveal_type(d1, expected_text="() -> int")
+t_d1: Literal["() -> int"] = reveal_type(d1)
 
 # This should generate an error.
 d2 = func3(callback2)
@@ -102,9 +102,9 @@ d2 = func3(callback2)
 d3 = func3(callback3)
 
 d4 = func3(callback4)
-reveal_type(d4, expected_text="(complex, str) -> int")
+t_d4: Literal["(complex, str) -> int"] = reveal_type(d4)
 d4_1 = d4(3j, "hi")
-reveal_type(d4_1, expected_text="int")
+t_d4_1: Literal["int"] = reveal_type(d4_1)
 
 # This should generate an error.
 d4_2 = d4(3j)
@@ -122,10 +122,10 @@ def callback8(a: int, b: str, c: complex, d: int) -> int:
 
 
 d5_1 = func4(callback1)
-reveal_type(d5_1, expected_text="() -> int")
+t_d5_1: Literal["() -> int"] = reveal_type(d5_1)
 
 # This should generate an error.
 d5_2 = func4(callback4)
 
 d5_3 = func4(callback8)
-reveal_type(d5_3, expected_text="(int, str, complex) -> int")
+t_d5_3: Literal["(int, str, complex) -> int"] = reveal_type(d5_3)

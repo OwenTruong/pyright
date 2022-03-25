@@ -1,7 +1,5 @@
 from typing import Any, Callable
 
-__all__ = ["JSONDecoder", "JSONDecodeError"]
-
 class JSONDecodeError(ValueError):
     msg: str
     doc: str

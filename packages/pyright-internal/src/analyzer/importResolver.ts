@@ -10,7 +10,7 @@
 
 import type { Dirent } from 'fs';
 
-import { appendArray, flatten, getMapValues, getOrAdd } from '../common/collectionUtils';
+import { flatten, getMapValues, getOrAdd } from '../common/collectionUtils';
 import { ConfigOptions, ExecutionEnvironment } from '../common/configOptions';
 import { FileSystem } from '../common/fileSystem';
 import { Host } from '../common/host';
@@ -64,23 +64,9 @@ export interface ModuleNameAndType {
 }
 
 export function createImportedModuleDescriptor(moduleName: string): ImportedModuleDescriptor {
-    if (moduleName.length === 0) {
-        return { leadingDots: 0, nameParts: [], importedSymbols: [] };
-    }
-
-    let startIndex = 0;
-    let leadingDots = 0;
-    for (; startIndex < moduleName.length; startIndex++) {
-        if (moduleName[startIndex] !== '.') {
-            break;
-        }
-
-        leadingDots++;
-    }
-
     return {
-        leadingDots,
-        nameParts: moduleName.slice(startIndex).split('.'),
+        leadingDots: 0,
+        nameParts: moduleName.split('.'),
         importedSymbols: [],
     };
 }
@@ -340,10 +326,6 @@ export class ImportResolver {
         return suggestions;
     }
 
-    getConfigOption() {
-        return this._configOptions;
-    }
-
     private _getCompletionSuggestionsStrict(
         sourceFilePath: string,
         execEnv: ExecutionEnvironment,
@@ -435,9 +417,7 @@ export class ImportResolver {
                                     result.nonStubImportResult.resolvedPaths.length - 1
                                 ];
 
-                            if (nonEmptyPath.endsWith('.py') || nonEmptyPath.endsWith('.pyi')) {
-                                // We allow pyi in case there are multiple pyi for a compiled module such as
-                                // numpy.random.mtrand
+                            if (nonEmptyPath.endsWith('.py')) {
                                 sourceFilePaths.push(nonEmptyPath);
                             }
                         }
@@ -656,7 +636,7 @@ export class ImportResolver {
             roots.push(execEnv.root);
         }
 
-        appendArray(roots, execEnv.extraPaths);
+        roots.push(...execEnv.extraPaths);
 
         if (this._configOptions.stubPath) {
             roots.push(this._configOptions.stubPath);
@@ -672,7 +652,7 @@ export class ImportResolver {
             }
         } else {
             const thirdPartyPaths = this._getThirdPartyTypeshedPackageRoots(execEnv, importFailureInfo);
-            appendArray(roots, thirdPartyPaths);
+            roots.push(...thirdPartyPaths);
         }
 
         const typeshedPathEx = this.getTypeshedPathEx(execEnv, importFailureInfo);
@@ -682,7 +662,7 @@ export class ImportResolver {
 
         const pythonSearchPaths = this.getPythonSearchPaths(importFailureInfo);
         if (pythonSearchPaths.length > 0) {
-            appendArray(roots, pythonSearchPaths);
+            roots.push(...pythonSearchPaths);
         }
 
         return roots;
@@ -1211,38 +1191,42 @@ export class ImportResolver {
         const importName = this.formatImportName(moduleDescriptor);
         const importFailureInfo: string[] = [];
 
-        // Check for a local stub file using stubPath.
-        if (allowPyi && this._configOptions.stubPath) {
-            importFailureInfo.push(`Looking in stubPath '${this._configOptions.stubPath}'`);
-            const typingsImport = this.resolveAbsoluteImport(
-                this._configOptions.stubPath,
+        // First check for a stdlib typeshed file.
+        if (allowPyi && moduleDescriptor.nameParts.length > 0) {
+            const builtInImport = this._findTypeshedPath(
                 execEnv,
                 moduleDescriptor,
                 importName,
-                importFailureInfo,
-                /* allowPartial */ undefined,
-                /* allowNativeLib */ false,
-                /* useStubPackage */ true,
-                allowPyi,
-                /* lookForPyTyped */ false
+                /* isStdLib */ true,
+                importFailureInfo
             );
+            if (builtInImport) {
+                builtInImport.isTypeshedFile = true;
+                return builtInImport;
+            }
+        }
 
-            if (typingsImport.isImportFound) {
-                // We will treat typings files as "local" rather than "third party".
-                typingsImport.importType = ImportType.Local;
-                typingsImport.isLocalTypingsFile = true;
+        if (allowPyi) {
+            // Check for a local stub file using stubPath.
+            if (this._configOptions.stubPath) {
+                importFailureInfo.push(`Looking in stubPath '${this._configOptions.stubPath}'`);
+                const typingsImport = this.resolveAbsoluteImport(
+                    this._configOptions.stubPath,
+                    execEnv,
+                    moduleDescriptor,
+                    importName,
+                    importFailureInfo,
+                    /* allowPartial */ undefined,
+                    /* allowNativeLib */ false,
+                    /* useStubPackage */ true,
+                    allowPyi,
+                    /* lookForPyTyped */ false
+                );
 
-                // If it's a namespace package that didn't resolve to a file, make sure that
-                // the imported symbols are present in the implicit imports. If not, we'll
-                // skip the typings import and continue searching.
-                if (
-                    typingsImport.isNamespacePackage &&
-                    !typingsImport.resolvedPaths[typingsImport.resolvedPaths.length - 1]
-                ) {
-                    if (this._isNamespacePackageResolved(moduleDescriptor, typingsImport.implicitImports)) {
-                        return typingsImport;
-                    }
-                } else {
+                if (typingsImport.isImportFound) {
+                    // We will treat typings files as "local" rather than "third party".
+                    typingsImport.importType = ImportType.Local;
+                    typingsImport.isLocalTypingsFile = true;
                     return typingsImport;
                 }
             }
@@ -1322,14 +1306,13 @@ export class ImportResolver {
 
         // If a library is fully py.typed, then we have found the best match,
         // unless the execution environment is typeshed itself, in which case
-        // we don't want to favor py.typed libraries. Use the typeshed lookup below.
+        // we don't want to favor py.typed libraries the typeshed lookup below.
         if (execEnv.root !== this._getTypeshedRoot(execEnv, importFailureInfo)) {
             if (bestResultSoFar?.pyTypedInfo && !bestResultSoFar.isPartlyResolved) {
                 return bestResultSoFar;
             }
         }
 
-        // Call the extensibility hook for subclasses.
         const extraResults = this.resolveImportEx(
             sourceFilePath,
             execEnv,
@@ -1338,29 +1321,13 @@ export class ImportResolver {
             importFailureInfo,
             allowPyi
         );
-
-        if (extraResults) {
+        if (extraResults !== undefined) {
             return extraResults;
         }
 
-        if (allowPyi && moduleDescriptor.nameParts.length > 0) {
-            // Check for a stdlib typeshed file.
-            importFailureInfo.push(`Looking for typeshed stdlib path`);
-            const typeshedStdlibImport = this._findTypeshedPath(
-                execEnv,
-                moduleDescriptor,
-                importName,
-                /* isStdLib */ true,
-                importFailureInfo
-            );
-
-            if (typeshedStdlibImport) {
-                typeshedStdlibImport.isTypeshedFile = true;
-                return typeshedStdlibImport;
-            }
-
+        if (allowPyi) {
             // Check for a third-party typeshed file.
-            importFailureInfo.push(`Looking for typeshed third-party path`);
+            importFailureInfo.push(`Looking for typeshed path`);
             const typeshedImport = this._findTypeshedPath(
                 execEnv,
                 moduleDescriptor,
@@ -1402,11 +1369,6 @@ export class ImportResolver {
             // Prefer traditional over namespace imports.
             if (bestImportSoFar.isNamespacePackage && !newImport.isNamespacePackage) {
                 return newImport;
-            }
-
-            // Prefer local packages.
-            if (bestImportSoFar.importType === ImportType.Local && !bestImportSoFar.isNamespacePackage) {
-                return bestImportSoFar;
             }
 
             // If both are namespace imports, select the one that resolves the symbols.
@@ -1857,39 +1819,6 @@ export class ImportResolver {
             /* allowPartial */ false,
             /* allowNativeLib */ true
         );
-
-        if (absImport && absImport.isStubFile) {
-            // If we found a stub for a relative import, only search
-            // the same folder for the real module. Otherwise, it will
-            // error out on runtime.
-            absImport.nonStubImportResult = this.resolveAbsoluteImport(
-                directory,
-                execEnv,
-                moduleDescriptor,
-                importName,
-                importFailureInfo,
-                /* allowPartial */ false,
-                /* allowNativeLib */ true,
-                /* useStubPackage */ false,
-                /* allowPyi */ false
-            ) || {
-                importName,
-                isRelative: true,
-                isImportFound: false,
-                isPartlyResolved: false,
-                isNamespacePackage: false,
-                isStubPackage: false,
-                importFailureInfo,
-                resolvedPaths: [],
-                importType: ImportType.Local,
-                isStubFile: false,
-                isNativeLib: false,
-                implicitImports: [],
-                filteredImplicitImports: [],
-                nonStubImportResult: undefined,
-            };
-        }
-
         return this.filterImplicitImports(absImport, moduleDescriptor.importedSymbols);
     }
 

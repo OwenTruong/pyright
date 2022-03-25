@@ -5,7 +5,7 @@
 # pyright: reportMissingModuleSource=false
 
 import os
-from typing import Any, List, Tuple, TypeVar, Union
+from typing import Any, List, Literal, Tuple, TypeVar, Union
 from typing_extensions import TypeGuard
 
 _T = TypeVar("_T")
@@ -17,9 +17,9 @@ def is_two_element_tuple(a: Tuple[_T, ...]) -> TypeGuard[Tuple[_T, _T]]:
 
 def func1(a: Tuple[int, ...]):
     if is_two_element_tuple(a):
-        reveal_type(a, expected_text="Tuple[int, int]")
+        t1: Literal["Tuple[int, int]"] = reveal_type(a)
     else:
-        reveal_type(a, expected_text="Tuple[int, ...]")
+        t2: Literal["Tuple[int, ...]"] = reveal_type(a)
 
 
 def is_string_list(val: List[Any], allow_zero_entries: bool) -> TypeGuard[List[str]]:
@@ -30,17 +30,14 @@ def is_string_list(val: List[Any], allow_zero_entries: bool) -> TypeGuard[List[s
 
 def func2(a: List[Union[str, int]]):
     if is_string_list(a, True):
-        reveal_type(a, expected_text="List[str]")
+        t1: Literal["List[str]"] = reveal_type(a)
     else:
-        reveal_type(a, expected_text="List[str | int]")
+        t2: Literal["List[str | int]"] = reveal_type(a)
 
 
 # This should generate an error because TypeGuard
 # has no type argument.
-def bad1(a: int, b: object) -> TypeGuard:
-    # This is a runtime use of TypeGuard and shouldn't generate an error.
-    if b is TypeGuard:
-        return True
+def bad1(a: int) -> TypeGuard:
     return True
 
 

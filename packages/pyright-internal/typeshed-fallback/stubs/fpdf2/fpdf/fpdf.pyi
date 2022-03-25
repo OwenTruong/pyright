@@ -1,22 +1,14 @@
 import datetime
-from _typeshed import StrPath
-from collections import defaultdict
-from collections.abc import Callable
-from contextlib import _GeneratorContextManager
+from collections.abc import Callable, Generator
 from enum import IntEnum
-from io import BytesIO
 from pathlib import Path
-from typing import Any, NamedTuple, overload
+from typing import Any, NamedTuple
 from typing_extensions import Literal
 
-from PIL import Image
-
 from .actions import Action
-from .recorder import FPDFRecorder
-from .syntax import DestinationXYZ
 from .util import _Unit
 
-_Orientation = Literal["", "portrait", "p", "P", "landscape", "l", "L"]
+_Orientation = Literal["", "portrait", "P", "landscape", "L"]
 _Format = Literal["", "a3", "A3", "a4", "A4", "a5", "A5", "letter", "Letter", "legal", "Legal"]
 _FontStyle = Literal["", "B", "I"]
 _FontStyles = Literal["", "B", "I", "U", "BU", "UB", "BI", "IB", "IU", "UI", "BIU", "BUI", "IBU", "IUB", "UBI", "UIB"]
@@ -63,31 +55,25 @@ class SubsetMap:
 def get_page_format(format: _Format | tuple[float, float], k: float | None = ...) -> tuple[float, float]: ...
 def load_cache(filename: Path): ...
 
-# TODO: TypedDicts
-_Page = dict[str, Any]
-_Font = dict[str, Any]
-_FontFile = dict[str, Any]
-_Image = dict[str, Any]
-
 class FPDF:
     MARKDOWN_BOLD_MARKER: str
     MARKDOWN_ITALICS_MARKER: str
     MARKDOWN_UNDERLINE_MARKER: str
-    offsets: dict[int, int]
+    offsets: Any
     page: int
     n: int
-    buffer: bytearray
-    pages: dict[int, _Page]
-    state: DocumentState
-    fonts: dict[str, _Font]
-    font_files: dict[str, _FontFile]
-    diffs: dict[int, int]
-    images: dict[str, _Image]
-    annots: defaultdict[int, list[Annotation]]
-    links: dict[int, DestinationXYZ]
+    buffer: Any
+    pages: Any
+    state: Any
+    fonts: Any
+    font_files: Any
+    diffs: Any
+    images: Any
+    annots: Any
+    links: Any
     in_footer: int
     lasth: int
-    current_font: _Font
+    current_font: Any
     font_family: str
     font_style: str
     font_size_pt: int
@@ -114,8 +100,6 @@ class FPDF:
     font_size: Any
     c_margin: Any
     line_width: float
-    dw_pt: float
-    dh_pt: float
     compress: bool
     pdf_version: str
 
@@ -124,13 +108,6 @@ class FPDF:
     t_margin: float
     r_margin: float
     l_margin: float
-
-    # Set during call to _set_orientation(), called from __init__().
-    cur_orientation: Literal["P", "L"]
-    w_pt: float
-    h_pt: float
-    w: float
-    h: float
     def __init__(
         self,
         orientation: _Orientation = ...,
@@ -189,7 +166,7 @@ class FPDF:
     ) -> None: ...
     def header(self) -> None: ...
     def footer(self) -> None: ...
-    def page_no(self) -> int: ...
+    def page_no(self): ...
     def set_draw_color(self, r, g: int = ..., b: int = ...) -> None: ...
     def set_fill_color(self, r, g: int = ..., b: int = ...) -> None: ...
     def set_text_color(self, r, g: int = ..., b: int = ...) -> None: ...
@@ -213,7 +190,7 @@ class FPDF:
     def add_action(self, action, x, y, w, h) -> None: ...
     def text(self, x, y, txt: str = ...) -> None: ...
     def rotate(self, angle, x: Any | None = ..., y: Any | None = ...) -> None: ...
-    def rotation(self, angle, x: Any | None = ..., y: Any | None = ...) -> _GeneratorContextManager[None]: ...
+    def rotation(self, angle, x: Any | None = ..., y: Any | None = ...) -> Generator[None, None, None]: ...
     @property
     def accept_page_break(self): ...
     def cell(
@@ -247,7 +224,7 @@ class FPDF:
     def write(self, h: Any | None = ..., txt: str = ..., link: str = ...) -> None: ...
     def image(
         self,
-        name: str | Image.Image | BytesIO | StrPath,
+        name,
         x: float | None = ...,
         y: float | None = ...,
         w: float = ...,
@@ -256,22 +233,19 @@ class FPDF:
         link: str = ...,
         title: str | None = ...,
         alt_text: str | None = ...,
-    ) -> _Image: ...
+    ): ...
     def ln(self, h: Any | None = ...) -> None: ...
     def get_x(self) -> float: ...
     def set_x(self, x: float) -> None: ...
     def get_y(self) -> float: ...
     def set_y(self, y: float) -> None: ...
     def set_xy(self, x: float, y: float) -> None: ...
-    @overload
-    def output(self, name: Literal[""] = ...) -> bytearray: ...  # type: ignore[misc]
-    @overload
-    def output(self, name: str) -> None: ...
+    def output(self, name: str = ..., dest: str = ...): ...
     def normalize_text(self, txt): ...
     def interleaved2of5(self, txt, x, y, w: int = ..., h: int = ...) -> None: ...
     def code39(self, txt, x, y, w: float = ..., h: int = ...) -> None: ...
-    def rect_clip(self, x, y, w, h) -> _GeneratorContextManager[None]: ...
-    def unbreakable(self) -> _GeneratorContextManager[FPDFRecorder]: ...
+    def rect_clip(self, x, y, w, h) -> Generator[None, None, None]: ...
+    def unbreakable(self) -> Generator[Any, None, None]: ...
     def insert_toc_placeholder(self, render_toc_function, pages: int = ...) -> None: ...
     def set_section_title_styles(
         self,

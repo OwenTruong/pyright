@@ -1,21 +1,17 @@
 from types import CodeType, FrameType, TracebackType
-from typing import IO, Any, Callable, Iterable, Mapping, SupportsInt, TypeVar
-from typing_extensions import Literal, ParamSpec
-
-__all__ = ["BdbQuit", "Bdb", "Breakpoint"]
+from typing import IO, Any, Callable, Iterable, Mapping, Set, SupportsInt, Tuple, Type, TypeVar
 
 _T = TypeVar("_T")
-_P = ParamSpec("_P")
 _TraceDispatch = Callable[[FrameType, str, Any], Any]  # TODO: Recursive type
-_ExcInfo = tuple[type[BaseException], BaseException, FrameType]
+_ExcInfo = Tuple[Type[BaseException], BaseException, FrameType]
 
-GENERATOR_AND_COROUTINE_FLAGS: Literal[672]
+GENERATOR_AND_COROUTINE_FLAGS: int
 
 class BdbQuit(Exception): ...
 
 class Bdb:
 
-    skip: set[str] | None
+    skip: Set[str] | None
     breaks: dict[str, list[int]]
     fncache: dict[str, str]
     frame_returning: FrameType | None
@@ -65,7 +61,7 @@ class Bdb:
     def run(self, cmd: str | CodeType, globals: dict[str, Any] | None = ..., locals: Mapping[str, Any] | None = ...) -> None: ...
     def runeval(self, expr: str, globals: dict[str, Any] | None = ..., locals: Mapping[str, Any] | None = ...) -> None: ...
     def runctx(self, cmd: str | CodeType, globals: dict[str, Any] | None, locals: Mapping[str, Any] | None) -> None: ...
-    def runcall(self, __func: Callable[_P, _T], *args: _P.args, **kwds: _P.kwargs) -> _T | None: ...
+    def runcall(self, __func: Callable[..., _T], *args: Any, **kwds: Any) -> _T | None: ...
 
 class Breakpoint:
 
@@ -91,6 +87,7 @@ class Breakpoint:
     def disable(self) -> None: ...
     def bpprint(self, out: IO[str] | None = ...) -> None: ...
     def bpformat(self) -> str: ...
+    def __str__(self) -> str: ...
 
 def checkfuncname(b: Breakpoint, frame: FrameType) -> bool: ...
 def effective(file: str, line: int, frame: FrameType) -> tuple[Breakpoint, bool] | tuple[None, None]: ...

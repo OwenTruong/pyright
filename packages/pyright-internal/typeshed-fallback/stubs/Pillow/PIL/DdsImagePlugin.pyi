@@ -1,4 +1,3 @@
-from typing import ClassVar
 from typing_extensions import Literal
 
 from .ImageFile import ImageFile
@@ -66,6 +65,6 @@ DXGI_FORMAT_BC7_UNORM: int
 DXGI_FORMAT_BC7_UNORM_SRGB: int
 
 class DdsImageFile(ImageFile):
-    format: ClassVar[Literal["DDS"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
     def load_seek(self, pos) -> None: ...

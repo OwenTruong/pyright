@@ -204,6 +204,5 @@ export function createSynthesizedAliasDeclaration(path: string): AliasDeclaratio
         implicitImports: new Map<string, ModuleLoaderActions>(),
         usesLocalName: false,
         moduleName: '',
-        isInExceptSuite: false,
     };
 }

@@ -1,11 +1,11 @@
 # This sample tests the special case of the tuple() constructor
 # when used with bidirectional type inference.
 
-from typing import Tuple
+from typing import Literal, Tuple
 
 
 tuple1: Tuple[int, ...] = tuple()
-reveal_type(tuple1, expected_text="tuple[int, ...]")
+t1: Literal["tuple[int, ...]"] = reveal_type(tuple1)
 
 tuple2: Tuple[str, int, complex] = tuple()
-reveal_type(tuple2, expected_text="tuple[str, int, complex]")
+t2: Literal["tuple[str, int, complex]"] = reveal_type(tuple2)

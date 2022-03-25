@@ -2,7 +2,6 @@
 # python source file (as opposed to a stub file).
 
 from typing import Optional, Union
-import uuid
 
 
 class ClassA:
@@ -52,38 +51,3 @@ y: """
         str
     ]
 """
-
-
-class ClassD:
-    ClassA: "ClassA"
-
-    # This should generate an error because ClassF refers
-    # to itself, and there is no ClassF declared at the module
-    # level.
-    ClassF: "ClassF"
-
-    str: "str"
-
-    def int(self):
-        ...
-
-    foo: "int"
-
-    # This should generate an error because it refers to the local
-    # "int" symbol rather than the builtins "int".
-    bar: int
-
-
-# This should generate an error because modules are not allowed in
-# type annotations.
-z: typing
-
-
-class ClassG:
-    uuid = uuid.uuid4()
-
-
-class ClassH:
-    # This should generate an error because uuid refers to the local
-    # symbol in this case.
-    uuid: uuid.UUID = uuid.uuid4()

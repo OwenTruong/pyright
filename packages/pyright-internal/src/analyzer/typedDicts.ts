@@ -8,7 +8,6 @@
  * classes.
  */
 
-import { appendArray } from '../common/collectionUtils';
 import { assert } from '../common/debug';
 import { DiagnosticAddendum } from '../common/diagnostic';
 import { DiagnosticRule } from '../common/diagnosticRules';
@@ -145,11 +144,7 @@ export function createTypedDictType(
                 entryMap.set(entryName, true);
 
                 // Cache the annotation type.
-                const annotatedType = evaluator.getTypeForExpressionExpectingType(
-                    entry.valueExpression,
-                    /* allowFinal */ true,
-                    /* allowRequired */ true
-                );
+                evaluator.getTypeForExpressionExpectingType(entry.valueExpression, /* allowFinal */ true);
 
                 const newSymbol = new Symbol(SymbolFlags.InstanceMember);
                 const declaration: VariableDeclaration = {
@@ -157,25 +152,17 @@ export function createTypedDictType(
                     node: entry.keyExpression,
                     path: fileInfo.filePath,
                     typeAnnotationNode: entry.valueExpression,
-                    isRequired: annotatedType.isRequired,
-                    isNotRequired: annotatedType.isNotRequired,
-                    isRuntimeTypeExpression: true,
                     range: convertOffsetsToRange(
                         entry.keyExpression.start,
                         TextRange.getEnd(entry.keyExpression),
                         fileInfo.lines
                     ),
                     moduleName: fileInfo.moduleName,
-                    isInExceptSuite: false,
                 };
                 newSymbol.addDeclaration(declaration);
 
                 classFields.set(entryName, newSymbol);
             });
-
-            // Set the type in the type cache for the dict node so it doesn't
-            // get evaluated again.
-            evaluator.setTypeForNode(entryDict);
         } else if (entriesArg.name) {
             for (let i = 1; i < argList.length; i++) {
                 const entry = argList[i];
@@ -193,11 +180,7 @@ export function createTypedDictType(
 
                 // Evaluate the type with specific evaluation flags. The
                 // type will be cached for later.
-                const annotatedType = evaluator.getTypeForExpressionExpectingType(
-                    entry.valueExpression,
-                    /* allowFinal */ true,
-                    /* allowRequired */ true
-                );
+                evaluator.getTypeForExpressionExpectingType(entry.valueExpression, /* allowFinal */ true);
 
                 const newSymbol = new Symbol(SymbolFlags.InstanceMember);
                 const fileInfo = AnalyzerNodeInfo.getFileInfo(errorNode);
@@ -206,16 +189,12 @@ export function createTypedDictType(
                     node: entry.name,
                     path: fileInfo.filePath,
                     typeAnnotationNode: entry.valueExpression,
-                    isRequired: annotatedType.isRequired,
-                    isNotRequired: annotatedType.isNotRequired,
-                    isRuntimeTypeExpression: true,
                     range: convertOffsetsToRange(
                         entry.name.start,
                         TextRange.getEnd(entry.valueExpression),
                         fileInfo.lines
                     ),
                     moduleName: fileInfo.moduleName,
-                    isInExceptSuite: false,
                 };
                 newSymbol.addDeclaration(declaration);
 
@@ -319,24 +298,17 @@ export function synthesizeTypedDictClassMethods(
             type: ClassType.cloneAsInstance(classType),
             hasDeclaredType: true,
         };
-        const createDefaultTypeVar = (func: FunctionType) => {
-            let defaultTypeVar = TypeVarType.createInstance(`__${func.details.name}_default`);
-            defaultTypeVar.details.isSynthesized = true;
-            defaultTypeVar = TypeVarType.cloneForScopeId(
-                defaultTypeVar,
-                func.details.typeVarScopeId!,
-                classType.details.name,
-                TypeVarScopeType.Function
-            );
-            return defaultTypeVar;
-        };
+        const typeVarScopeId = evaluator.getScopeIdForNode(node);
+        let defaultTypeVar = TypeVarType.createInstance(`__${classType.details.name}_default`);
+        defaultTypeVar.details.isSynthesized = true;
+        defaultTypeVar = TypeVarType.cloneForScopeId(
+            defaultTypeVar,
+            typeVarScopeId,
+            classType.details.name,
+            TypeVarScopeType.Function
+        );
 
-        const createGetMethod = (
-            keyType: Type,
-            valueType: Type,
-            includeDefault: boolean,
-            defaultTypeMatchesField = false
-        ) => {
+        const createGetMethod = (keyType: Type, valueType: Type, includeDefault: boolean) => {
             const getOverload = FunctionType.createInstance(
                 'get',
                 '',
@@ -344,7 +316,6 @@ export function synthesizeTypedDictClassMethods(
                 FunctionTypeFlags.SynthesizedMethod | FunctionTypeFlags.Overloaded
             );
             FunctionType.addParameter(getOverload, selfParam);
-            getOverload.details.typeVarScopeId = evaluator.getScopeIdForNode(node);
             FunctionType.addParameter(getOverload, {
                 category: ParameterCategory.Simple,
                 name: 'k',
@@ -352,16 +323,14 @@ export function synthesizeTypedDictClassMethods(
                 hasDeclaredType: true,
             });
             if (includeDefault) {
-                const defaultTypeVar = createDefaultTypeVar(getOverload);
                 FunctionType.addParameter(getOverload, {
                     category: ParameterCategory.Simple,
                     name: 'default',
-                    type: defaultTypeMatchesField ? valueType : defaultTypeVar,
+                    type: valueType,
                     hasDeclaredType: true,
+                    hasDefault: true,
                 });
-                getOverload.details.declaredReturnType = defaultTypeMatchesField
-                    ? valueType
-                    : combineTypes([valueType, defaultTypeVar]);
+                getOverload.details.declaredReturnType = valueType;
             } else {
                 getOverload.details.declaredReturnType = combineTypes([valueType, NoneType.createInstance()]);
             }
@@ -394,8 +363,6 @@ export function synthesizeTypedDictClassMethods(
             );
             FunctionType.addParameter(popOverload2, selfParam);
             FunctionType.addParameter(popOverload2, keyParam);
-            popOverload2.details.typeVarScopeId = evaluator.getScopeIdForNode(node);
-            const defaultTypeVar = createDefaultTypeVar(popOverload2);
             FunctionType.addParameter(popOverload2, {
                 category: ParameterCategory.Simple,
                 name: 'default',
@@ -404,10 +371,11 @@ export function synthesizeTypedDictClassMethods(
                 hasDefault: true,
             });
             popOverload2.details.declaredReturnType = combineTypes([valueType, defaultTypeVar]);
+            popOverload2.details.typeVarScopeId = typeVarScopeId;
             return [popOverload1, popOverload2];
         };
 
-        const createSetDefaultMethod = (keyType: Type, valueType: Type) => {
+        const createSetDefaultMethod = (keyType: Type, valueType: Type, isEntryRequired = false) => {
             const setDefaultOverload = FunctionType.createInstance(
                 'setdefault',
                 '',
@@ -425,9 +393,13 @@ export function synthesizeTypedDictClassMethods(
                 category: ParameterCategory.Simple,
                 name: 'default',
                 hasDeclaredType: true,
-                type: valueType,
+                type: isEntryRequired ? AnyType.create() : defaultTypeVar,
+                hasDefault: true,
             });
-            setDefaultOverload.details.declaredReturnType = valueType;
+            setDefaultOverload.details.declaredReturnType = isEntryRequired
+                ? valueType
+                : combineTypes([valueType, defaultTypeVar]);
+            setDefaultOverload.details.typeVarScopeId = typeVarScopeId;
             return setDefaultOverload;
         };
 
@@ -456,49 +428,34 @@ export function synthesizeTypedDictClassMethods(
         entries.forEach((entry, name) => {
             const nameLiteralType = ClassType.cloneAsInstance(ClassType.cloneWithLiteral(strClass, name));
 
-            getOverloads.push(createGetMethod(nameLiteralType, entry.valueType, /* includeDefault */ false));
-            getOverloads.push(
-                createGetMethod(
-                    nameLiteralType,
-                    entry.valueType,
-                    /* includeDefault */ true,
-                    /* defaultTypeMatchesField */ true
-                )
-            );
-            getOverloads.push(
-                createGetMethod(
-                    nameLiteralType,
-                    entry.valueType,
-                    /* includeDefault */ true,
-                    /* defaultTypeMatchesField */ false
-                )
-            );
-            appendArray(popOverloads, createPopMethods(nameLiteralType, entry.valueType));
-            setDefaultOverloads.push(createSetDefaultMethod(nameLiteralType, entry.valueType));
+            if (!entry.isRequired) {
+                getOverloads.push(createGetMethod(nameLiteralType, entry.valueType, /* includeDefault */ false));
+            }
+            getOverloads.push(createGetMethod(nameLiteralType, entry.valueType, /* includeDefault */ true));
+            popOverloads.push(...createPopMethods(nameLiteralType, entry.valueType));
+            setDefaultOverloads.push(createSetDefaultMethod(nameLiteralType, entry.valueType, entry.isRequired));
         });
 
-        // Provide a final `get` overload that handles the general case where
-        // the key is a str but the literal value isn't known.
+        // Provide a final overload that handles the general case where the key is
+        // a str but the literal value isn't known.
         const strType = ClassType.cloneAsInstance(strClass);
         getOverloads.push(createGetMethod(strType, AnyType.create(), /* includeDefault */ false));
         getOverloads.push(createGetMethod(strType, AnyType.create(), /* includeDefault */ true));
+        popOverloads.push(...createPopMethods(strType, AnyType.create()));
+        setDefaultOverloads.push(createSetDefaultMethod(strType, AnyType.create()));
 
         symbolTable.set(
             'get',
             Symbol.createWithType(SymbolFlags.ClassMember, OverloadedFunctionType.create(getOverloads))
         );
-        if (popOverloads.length > 0) {
-            symbolTable.set(
-                'pop',
-                Symbol.createWithType(SymbolFlags.ClassMember, OverloadedFunctionType.create(popOverloads))
-            );
-        }
-        if (setDefaultOverloads.length > 0) {
-            symbolTable.set(
-                'setdefault',
-                Symbol.createWithType(SymbolFlags.ClassMember, OverloadedFunctionType.create(setDefaultOverloads))
-            );
-        }
+        symbolTable.set(
+            'pop',
+            Symbol.createWithType(SymbolFlags.ClassMember, OverloadedFunctionType.create(popOverloads))
+        );
+        symbolTable.set(
+            'setdefault',
+            Symbol.createWithType(SymbolFlags.ClassMember, OverloadedFunctionType.create(setDefaultOverloads))
+        );
         symbolTable.set('__delitem__', Symbol.createWithType(SymbolFlags.ClassMember, createDelItemMethod(strType)));
     }
 }
@@ -539,11 +496,10 @@ function getTypedDictMembersForClassRecursive(
     if (recursionCount > maxTypeRecursionCount) {
         return;
     }
-    recursionCount++;
 
     classType.details.baseClasses.forEach((baseClassType) => {
         if (isInstantiableClass(baseClassType) && ClassType.isTypedDictClass(baseClassType)) {
-            getTypedDictMembersForClassRecursive(evaluator, baseClassType, keyMap, recursionCount);
+            getTypedDictMembersForClassRecursive(evaluator, baseClassType, keyMap, recursionCount + 1);
         }
     });
 
@@ -649,7 +605,7 @@ export function canAssignTypedDict(
                     /* diag */ undefined,
                     /* typeVarMap */ undefined,
                     /* flags */ undefined,
-                    recursionCount
+                    recursionCount + 1
                 )
             ) {
                 if (diag) {
@@ -774,7 +730,7 @@ export function getTypeFromIndexedTypedDict(
         return undefined;
     }
 
-    const entries = getTypedDictMembersForClass(evaluator, baseType, /* allowNarrowed */ usage.method === 'get');
+    const entries = getTypedDictMembersForClass(evaluator, baseType, /* allowNarrowed */ true);
 
     const indexTypeResult = evaluator.getTypeOfExpression(node.items[0].valueExpression);
     const indexType = indexTypeResult.type;
@@ -817,9 +773,7 @@ export function getTypeFromIndexedTypedDict(
             }
 
             if (usage.method === 'set') {
-                if (!evaluator.canAssignType(entry.valueType, usage.setType || AnyType.create(), diag)) {
-                    allDiagsInvolveNotRequiredKeys = false;
-                }
+                evaluator.canAssignType(entry.valueType, usage.setType || AnyType.create(), diag);
             } else if (usage.method === 'del' && entry.isRequired) {
                 diag.addMessage(
                     Localizer.DiagnosticAddendum.keyRequiredDeleted().format({

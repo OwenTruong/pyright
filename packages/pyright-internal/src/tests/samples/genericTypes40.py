@@ -1,8 +1,6 @@
 # This sample tests the type variable solving process when a
 # callable type is involved.
 
-# pyright: strict
-
 from typing import Callable, Dict, Literal, TypeVar
 
 
@@ -11,13 +9,13 @@ def filter_fn(value: object):
 
 
 v1 = filter(filter_fn, [1, 2, 3])
-reveal_type(v1, expected_text="filter[int]")
+t1: Literal["filter[int]"] = reveal_type(v1)
 
 v2 = filter(filter_fn, {1, 2})
-reveal_type(v2, expected_text="filter[int]")
+t2: Literal["filter[int]"] = reveal_type(v2)
 
 v3 = filter(filter_fn, {1: 2})
-reveal_type(v3, expected_text="filter[int]")
+t3: Literal["filter[int]"] = reveal_type(v3)
 
 
 _T = TypeVar("_T")
@@ -28,11 +26,4 @@ def func(v: Callable[[], _T]) -> _T:
     ...
 
 
-x1: Dict[Animal, int] = func(lambda: {"cat": 0})
-
-
-def func1(factory: Callable[[], _T]) -> _T:
-    ...
-
-
-x2: set[int] = func1(lambda: set())
+x: Dict[Animal, int] = func(lambda: {"cat": 0})

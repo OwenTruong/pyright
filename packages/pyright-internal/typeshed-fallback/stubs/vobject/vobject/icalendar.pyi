@@ -1,15 +1,15 @@
 from datetime import timedelta
-from typing import Any
+from typing import Any, Tuple
 
 from .base import Component
 from .behavior import Behavior
 
-DATENAMES: tuple[str, ...]
-RULENAMES: tuple[str, ...]
-DATESANDRULES: tuple[str, ...]
+DATENAMES: Tuple[str, ...]
+RULENAMES: Tuple[str, ...]
+DATESANDRULES: Tuple[str, ...]
 PRODID: str
-WEEKDAYS: tuple[str, ...]
-FREQUENCIES: tuple[str, ...]
+WEEKDAYS: Tuple[str, ...]
+FREQUENCIES: Tuple[str, ...]
 zeroDelta: timedelta
 twoHours: timedelta
 
@@ -36,7 +36,7 @@ class TimezoneComponent(Component):
     normal_attributes: Any
     @staticmethod
     def pickTzid(tzinfo, allowUTC: bool = ...): ...
-    def prettyPrint(self, level, tabwidth) -> None: ...  # type: ignore[override]
+    def prettyPrint(self, level, tabwidth) -> None: ...  # type: ignore
 
 class RecurringComponent(Component):
     isNative: bool

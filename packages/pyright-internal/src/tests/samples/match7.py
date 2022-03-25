@@ -1,30 +1,32 @@
 # This sample tests type narrowing of subject expressions for
 # match statements.
 
+from typing import Literal
+
 
 def func1(subj: int | dict[str, str] | tuple[int] | str, cond: bool):
     match subj:
         case (3 | "hi"):
-            reveal_type(subj, expected_text="Literal[3, 'hi']")
+            t_v1: Literal["Literal[3, 'hi']"] = reveal_type(subj)
             return
 
         case int(y) if cond:
-            reveal_type(subj, expected_text="int")
+            t_v2: Literal["int"] = reveal_type(subj)
             return
 
         case int(y):
-            reveal_type(subj, expected_text="int")
+            t_v3: Literal["int"] = reveal_type(subj)
             return
 
         case int():
-            reveal_type(subj, expected_text="Never")
+            t_v4: Literal["Never"] = reveal_type(subj)
             return
 
         case str(z):
-            reveal_type(subj, expected_text="str")
+            t_v5: Literal["str"] = reveal_type(subj)
             return
 
-    reveal_type(subj, expected_text="dict[str, str] | tuple[int]")
+    t_v6: Literal["dict[str, str] | tuple[int]"] = reveal_type(subj)
     return subj
 
 
@@ -35,7 +37,7 @@ def func2(subj: int | str) -> str:
         case int():
             return "int"
     
-    reveal_type(subj, expected_text='str')
+    t_v1: Literal['str'] = reveal_type(subj)
 
 
 # This should generate an error because there is the potential
@@ -48,7 +50,7 @@ def func3(subj: int | str) -> str:
         case int() if subj < 0:
             return "int"
     
-    reveal_type(subj, expected_text='int | str')
+    t_v1: Literal['int | str'] = reveal_type(subj)
 
 
 def func4(subj: int | str) -> str:

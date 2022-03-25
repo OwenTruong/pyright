@@ -125,19 +125,6 @@ test('NoReturn2', () => {
     TestUtils.validateResults(analysisResults, 0);
 });
 
-// This test is commented out for now because we needed to revert the fix.
-// test('NoReturn3', () => {
-//     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['noreturn3.py']);
-
-//     TestUtils.validateResults(analysisResults, 0);
-// });
-
-test('NoReturn4', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['noreturn4.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
 test('With1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['with1.py']);
 
@@ -168,12 +155,6 @@ test('With4', () => {
     TestUtils.validateResults(analysisResults2, 0);
 });
 
-test('With5', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['with5.py']);
-
-    TestUtils.validateResults(analysisResults, 0);
-});
-
 test('Mro1', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['mro1.py']);
 
@@ -190,12 +171,6 @@ test('Mro3', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['mro3.py']);
 
     TestUtils.validateResults(analysisResults, 0);
-});
-
-test('Mro4', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['mro4.py']);
-
-    TestUtils.validateResults(analysisResults, 1);
 });
 
 test('DefaultInitializer1', () => {
@@ -220,7 +195,7 @@ test('UnnecessaryIsInstance1', () => {
     // Turn on errors.
     configOptions.diagnosticRuleSet.reportUnnecessaryIsInstance = 'error';
     analysisResults = TestUtils.typeAnalyzeSampleFiles(['unnecessaryIsInstance1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 5);
+    TestUtils.validateResults(analysisResults, 4);
 });
 
 test('UnnecessaryIsSubclass1', () => {
@@ -235,7 +210,7 @@ test('UnnecessaryIsSubclass1', () => {
     TestUtils.validateResults(analysisResults, 2);
 });
 
-test('UnnecessaryCast1', () => {
+test('UnnecessaryCast', () => {
     const configOptions = new ConfigOptions('.');
 
     let analysisResults = TestUtils.typeAnalyzeSampleFiles(['unnecessaryCast1.py'], configOptions);
@@ -283,46 +258,6 @@ test('TypeIgnore3', () => {
     TestUtils.validateResults(analysisResults, 4);
 });
 
-test('TypeIgnore4', () => {
-    const configOptions = new ConfigOptions('.');
-
-    let analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIgnore4.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 0);
-
-    configOptions.diagnosticRuleSet.reportUnnecessaryTypeIgnoreComment = 'error';
-    analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIgnore4.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 2);
-});
-
-test('TypeIgnore5', () => {
-    const configOptions = new ConfigOptions('.');
-
-    let analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIgnore5.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 0);
-
-    configOptions.diagnosticRuleSet.reportUnnecessaryTypeIgnoreComment = 'warning';
-    analysisResults = TestUtils.typeAnalyzeSampleFiles(['typeIgnore5.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 0, 1);
-});
-
-test('PyrightIgnore1', () => {
-    const configOptions = new ConfigOptions('.');
-
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['pyrightIgnore1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 1);
-});
-
-test('PyrightIgnore2', () => {
-    const configOptions = new ConfigOptions('.');
-
-    let analysisResults = TestUtils.typeAnalyzeSampleFiles(['pyrightIgnore2.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 2);
-
-    configOptions.diagnosticRuleSet.reportUnnecessaryTypeIgnoreComment = 'warning';
-    analysisResults = TestUtils.typeAnalyzeSampleFiles(['pyrightIgnore2.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 2, 3);
-});
-
 test('DuplicateImports1', () => {
     const configOptions = new ConfigOptions('.');
 
@@ -362,16 +297,10 @@ test('Python2', () => {
     TestUtils.validateResults(analysisResults, 6);
 });
 
-test('InconsistentSpaceTab1', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['inconsistentSpaceTab1.py']);
+test('InconsistentSpaceTab', () => {
+    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['inconsistentSpaceTab.py']);
 
     TestUtils.validateResults(analysisResults, 4);
-});
-
-test('InconsistentSpaceTab2', () => {
-    const analysisResults = TestUtils.typeAnalyzeSampleFiles(['inconsistentSpaceTab2.py']);
-
-    TestUtils.validateResults(analysisResults, 1);
 });
 
 test('DuplicateDeclaration1', () => {
@@ -384,34 +313,6 @@ test('DuplicateDeclaration2', () => {
     const analysisResults = TestUtils.typeAnalyzeSampleFiles(['duplicateDeclaration2.py']);
 
     TestUtils.validateResults(analysisResults, 4);
-});
-
-test('Strings1', () => {
-    const configOptions = new ConfigOptions('.');
-    const analysisResults1 = TestUtils.typeAnalyzeSampleFiles(['strings1.py'], configOptions);
-    TestUtils.validateResults(analysisResults1, 0);
-
-    configOptions.diagnosticRuleSet.reportImplicitStringConcatenation = 'error';
-    const analysisResults2 = TestUtils.typeAnalyzeSampleFiles(['strings1.py'], configOptions);
-    TestUtils.validateResults(analysisResults2, 2);
-});
-
-test('UnusedExpression1', () => {
-    const configOptions = new ConfigOptions('.');
-
-    // By default, this is a warning.
-    let analysisResults = TestUtils.typeAnalyzeSampleFiles(['unusedExpression1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 0, 10);
-
-    // Disable it.
-    configOptions.diagnosticRuleSet.reportUnusedExpression = 'none';
-    analysisResults = TestUtils.typeAnalyzeSampleFiles(['unusedExpression1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 0);
-
-    // Enable it as an error.
-    configOptions.diagnosticRuleSet.reportUnusedExpression = 'error';
-    analysisResults = TestUtils.typeAnalyzeSampleFiles(['unusedExpression1.py'], configOptions);
-    TestUtils.validateResults(analysisResults, 10);
 });
 
 // For now, this functionality is disabled.

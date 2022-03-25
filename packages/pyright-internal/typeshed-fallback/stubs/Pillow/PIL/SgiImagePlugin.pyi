@@ -1,13 +1,12 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import ImageFile, PyDecoder
 
 MODES: Any
 
 class SgiImageFile(ImageFile):
-    format: ClassVar[Literal["SGI"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
 
 class SGI16Decoder(PyDecoder):
     def decode(self, buffer): ...

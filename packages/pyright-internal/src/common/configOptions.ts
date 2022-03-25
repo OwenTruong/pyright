@@ -11,7 +11,6 @@ import { isAbsolute } from 'path';
 
 import { getPathsFromPthFiles } from '../analyzer/pythonPathUtils';
 import * as pathConsts from '../common/pathConsts';
-import { appendArray } from './collectionUtils';
 import { DiagnosticSeverityOverridesMap } from './commandLineOptions';
 import { ConsoleInterface } from './console';
 import { DiagnosticRule } from './diagnosticRules';
@@ -45,7 +44,7 @@ export class ExecutionEnvironment {
         this.root = root || undefined;
         this.pythonVersion = defaultPythonVersion || latestStablePythonVersion;
         this.pythonPlatform = defaultPythonPlatform;
-        this.extraPaths = [...(defaultExtraPaths ?? [])];
+        this.extraPaths = defaultExtraPaths || [];
     }
 
     // Root directory for execution - absolute or relative to the
@@ -189,15 +188,9 @@ export interface DiagnosticRuleSet {
     // the base class symbol of the same name?
     reportIncompatibleVariableOverride: DiagnosticLevel;
 
-    // Report inconsistencies between __init__ and __new__ signatures.
-    reportInconsistentConstructor: DiagnosticLevel;
-
     // Report function overloads that overlap in signature but have
     // incompatible return types.
     reportOverlappingOverload: DiagnosticLevel;
-
-    // Report failure to call super().__init__() in __init__ method.
-    reportMissingSuperCall: DiagnosticLevel;
 
     // Report instance variables that are not initialized within
     // the constructor.
@@ -278,17 +271,6 @@ export interface DiagnosticRuleSet {
     // Report cases where a call expression's return result is Coroutine
     // and is not used in any way.
     reportUnusedCoroutine: DiagnosticLevel;
-
-    // Report cases where a simple expression result is not used in any way.
-    reportUnusedExpression: DiagnosticLevel;
-
-    // Report cases where the removal of a "# type: ignore" or "# pyright: ignore"
-    // comment would have no effect.
-    reportUnnecessaryTypeIgnoreComment: DiagnosticLevel;
-
-    // Report cases where the a "match" statement is not exhaustive in
-    // covering all possible cases.
-    reportMatchNotExhaustive: DiagnosticLevel;
 }
 
 export function cloneDiagnosticRuleSet(diagSettings: DiagnosticRuleSet): DiagnosticRuleSet {
@@ -296,28 +278,20 @@ export function cloneDiagnosticRuleSet(diagSettings: DiagnosticRuleSet): Diagnos
     return Object.assign({}, diagSettings);
 }
 
-// Returns a list of the diagnostic rules that are configured with
-// a true or false value.
-export function getBooleanDiagnosticRules(includeNonOverridable = false) {
-    const boolRules = [
+export function getBooleanDiagnosticRules() {
+    return [
         DiagnosticRule.strictListInference,
         DiagnosticRule.strictSetInference,
         DiagnosticRule.strictDictionaryInference,
         DiagnosticRule.strictParameterNoneValue,
-    ];
 
-    if (includeNonOverridable) {
         // Do not include this this one because we don't
         // want to override it in strict mode or support
         // it within pyright comments.
-        boolRules.push(DiagnosticRule.enableTypeIgnoreComments);
-    }
-
-    return boolRules;
+        // DiagnosticRule.enableTypeIgnoreComments
+    ];
 }
 
-// Returns a list of the diagnostic rules that are configured with
-// a diagnostic level ('none', 'error', etc.).
 export function getDiagLevelDiagnosticRules() {
     return [
         DiagnosticRule.reportGeneralTypeIssues,
@@ -349,9 +323,7 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportConstantRedefinition,
         DiagnosticRule.reportIncompatibleMethodOverride,
         DiagnosticRule.reportIncompatibleVariableOverride,
-        DiagnosticRule.reportInconsistentConstructor,
         DiagnosticRule.reportOverlappingOverload,
-        DiagnosticRule.reportMissingSuperCall,
         DiagnosticRule.reportUninitializedInstanceVariable,
         DiagnosticRule.reportInvalidStringEscapeSequence,
         DiagnosticRule.reportUnknownParameterType,
@@ -376,9 +348,6 @@ export function getDiagLevelDiagnosticRules() {
         DiagnosticRule.reportUnsupportedDunderAll,
         DiagnosticRule.reportUnusedCallResult,
         DiagnosticRule.reportUnusedCoroutine,
-        DiagnosticRule.reportUnusedExpression,
-        DiagnosticRule.reportUnnecessaryTypeIgnoreComment,
-        DiagnosticRule.reportMatchNotExhaustive,
     ];
 }
 
@@ -398,7 +367,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         strictListInference: false,
         strictSetInference: false,
         strictDictionaryInference: false,
-        strictParameterNoneValue: true,
+        strictParameterNoneValue: false,
         enableTypeIgnoreComments: true,
         reportGeneralTypeIssues: 'none',
         reportPropertyTypeMismatch: 'none',
@@ -429,9 +398,7 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportConstantRedefinition: 'none',
         reportIncompatibleMethodOverride: 'none',
         reportIncompatibleVariableOverride: 'none',
-        reportInconsistentConstructor: 'none',
         reportOverlappingOverload: 'none',
-        reportMissingSuperCall: 'none',
         reportUninitializedInstanceVariable: 'none',
         reportInvalidStringEscapeSequence: 'none',
         reportUnknownParameterType: 'none',
@@ -456,9 +423,6 @@ export function getOffDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnsupportedDunderAll: 'none',
         reportUnusedCallResult: 'none',
         reportUnusedCoroutine: 'none',
-        reportUnusedExpression: 'none',
-        reportUnnecessaryTypeIgnoreComment: 'none',
-        reportMatchNotExhaustive: 'none',
     };
 
     return diagSettings;
@@ -474,10 +438,10 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         strictListInference: false,
         strictSetInference: false,
         strictDictionaryInference: false,
-        strictParameterNoneValue: true,
+        strictParameterNoneValue: false,
         enableTypeIgnoreComments: true,
         reportGeneralTypeIssues: 'error',
-        reportPropertyTypeMismatch: 'none',
+        reportPropertyTypeMismatch: 'error',
         reportFunctionMemberAccess: 'none',
         reportMissingImports: 'error',
         reportMissingModuleSource: 'warning',
@@ -505,9 +469,7 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportConstantRedefinition: 'none',
         reportIncompatibleMethodOverride: 'none',
         reportIncompatibleVariableOverride: 'none',
-        reportInconsistentConstructor: 'none',
         reportOverlappingOverload: 'none',
-        reportMissingSuperCall: 'none',
         reportUninitializedInstanceVariable: 'none',
         reportInvalidStringEscapeSequence: 'warning',
         reportUnknownParameterType: 'none',
@@ -532,9 +494,6 @@ export function getBasicDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnsupportedDunderAll: 'warning',
         reportUnusedCallResult: 'none',
         reportUnusedCoroutine: 'error',
-        reportUnusedExpression: 'warning',
-        reportUnnecessaryTypeIgnoreComment: 'none',
-        reportMatchNotExhaustive: 'none',
     };
 
     return diagSettings;
@@ -553,10 +512,10 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         strictParameterNoneValue: true,
         enableTypeIgnoreComments: true, // Not overridden by strict mode
         reportGeneralTypeIssues: 'error',
-        reportPropertyTypeMismatch: 'none',
+        reportPropertyTypeMismatch: 'error',
         reportFunctionMemberAccess: 'error',
         reportMissingImports: 'error',
-        reportMissingModuleSource: 'warning', // Not overridden by strict mode
+        reportMissingModuleSource: 'warning',
         reportMissingTypeStubs: 'error',
         reportImportCycles: 'error',
         reportUnusedImport: 'error',
@@ -581,9 +540,7 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportConstantRedefinition: 'error',
         reportIncompatibleMethodOverride: 'error',
         reportIncompatibleVariableOverride: 'error',
-        reportInconsistentConstructor: 'error',
         reportOverlappingOverload: 'error',
-        reportMissingSuperCall: 'none',
         reportUninitializedInstanceVariable: 'none',
         reportInvalidStringEscapeSequence: 'error',
         reportUnknownParameterType: 'error',
@@ -608,9 +565,6 @@ export function getStrictDiagnosticRuleSet(): DiagnosticRuleSet {
         reportUnsupportedDunderAll: 'error',
         reportUnusedCallResult: 'none',
         reportUnusedCoroutine: 'error',
-        reportUnusedExpression: 'error',
-        reportUnnecessaryTypeIgnoreComment: 'none',
-        reportMatchNotExhaustive: 'error',
     };
 
     return diagSettings;
@@ -623,6 +577,14 @@ export class ConfigOptions {
         this.projectRoot = projectRoot;
         this.typeCheckingMode = typeCheckingMode;
         this.diagnosticRuleSet = ConfigOptions.getDiagnosticRuleSet(typeCheckingMode);
+
+        // If type checking mode is off, allow inference for py.typed sources
+        // since there is little or no downside and possible upside of discovering
+        // more type information in this case. If type checking is enabled, using
+        // type inference in this case can result in false positive errors.
+        if (typeCheckingMode === 'off') {
+            this.disableInferenceForPyTypedSources = false;
+        }
     }
 
     // Absolute directory of project. All relative paths in the config
@@ -684,6 +646,10 @@ export class ConfigOptions {
 
     // Minimum threshold for type eval logging
     typeEvaluationTimeThreshold = 50;
+
+    // Avoid using type inference for files within packages that claim
+    // to contain type annotations?
+    disableInferenceForPyTypedSources = true;
 
     // Current type checking mode.
     typeCheckingMode?: string;
@@ -895,30 +861,434 @@ export class ConfigOptions {
 
         this.typeCheckingMode = configTypeCheckingMode || typeCheckingMode;
         const defaultSettings = ConfigOptions.getDiagnosticRuleSet(this.typeCheckingMode);
+        if (this.typeCheckingMode === 'off') {
+            this.disableInferenceForPyTypedSources = false;
+        }
 
-        // Start with the default values for all rules in the rule set.
-        this.diagnosticRuleSet = { ...defaultSettings };
-
-        // Apply host-provided overrides.
+        // Apply host provided overrides first and then overrides from the config file
         this.applyDiagnosticOverrides(diagnosticOverrides);
 
-        // Apply overrides from the config file for the boolean rules.
-        getBooleanDiagnosticRules(/* includeNonOverridable */ true).forEach((ruleName) => {
-            (this.diagnosticRuleSet as any)[ruleName] = this._convertBoolean(
-                configObj[ruleName],
-                ruleName,
-                this.diagnosticRuleSet[ruleName] as boolean
-            );
-        });
+        this.diagnosticRuleSet = {
+            printUnknownAsAny: defaultSettings.printUnknownAsAny,
+            omitTypeArgsIfAny: defaultSettings.omitTypeArgsIfAny,
+            omitConditionalConstraint: defaultSettings.omitConditionalConstraint,
+            omitUnannotatedParamType: defaultSettings.omitUnannotatedParamType,
+            pep604Printing: defaultSettings.pep604Printing,
 
-        // Apply overrides from the config file for the diagnostic level rules.
-        getDiagLevelDiagnosticRules().forEach((ruleName) => {
-            (this.diagnosticRuleSet as any)[ruleName] = this._convertDiagnosticLevel(
-                configObj[ruleName],
-                ruleName,
-                this.diagnosticRuleSet[ruleName] as DiagnosticLevel
-            );
-        });
+            // Use strict inference rules for list expressions?
+            strictListInference: this._convertBoolean(
+                configObj.strictListInference,
+                DiagnosticRule.strictListInference,
+                defaultSettings.strictListInference
+            ),
+
+            // Use strict inference rules for set expressions?
+            strictSetInference: this._convertBoolean(
+                configObj.strictSetInference,
+                DiagnosticRule.strictSetInference,
+                defaultSettings.strictSetInference
+            ),
+
+            // Use strict inference rules for dictionary expressions?
+            strictDictionaryInference: this._convertBoolean(
+                configObj.strictDictionaryInference,
+                DiagnosticRule.strictDictionaryInference,
+                defaultSettings.strictDictionaryInference
+            ),
+
+            // Should a None default value imply that the parameter type
+            // is Optional?
+            strictParameterNoneValue: this._convertBoolean(
+                configObj.strictParameterNoneValue,
+                DiagnosticRule.strictParameterNoneValue,
+                defaultSettings.strictParameterNoneValue
+            ),
+
+            // Should "# type: ignore" be honored?
+            enableTypeIgnoreComments: this._convertBoolean(
+                configObj.enableTypeIgnoreComments,
+                DiagnosticRule.enableTypeIgnoreComments,
+                defaultSettings.enableTypeIgnoreComments
+            ),
+
+            // Read the "reportGeneralTypeIssues" entry.
+            reportGeneralTypeIssues: this._convertDiagnosticLevel(
+                configObj.reportGeneralTypeIssues,
+                DiagnosticRule.reportGeneralTypeIssues,
+                defaultSettings.reportGeneralTypeIssues
+            ),
+
+            // Read the "reportPropertyTypeMismatch" entry.
+            reportPropertyTypeMismatch: this._convertDiagnosticLevel(
+                configObj.reportPropertyTypeMismatch,
+                DiagnosticRule.reportPropertyTypeMismatch,
+                defaultSettings.reportPropertyTypeMismatch
+            ),
+
+            // Read the "reportFunctionMemberAccess" entry.
+            reportFunctionMemberAccess: this._convertDiagnosticLevel(
+                configObj.reportFunctionMemberAccess,
+                DiagnosticRule.reportFunctionMemberAccess,
+                defaultSettings.reportFunctionMemberAccess
+            ),
+
+            // Read the "reportMissingImports" entry.
+            reportMissingImports: this._convertDiagnosticLevel(
+                configObj.reportMissingImports,
+                DiagnosticRule.reportMissingImports,
+                defaultSettings.reportMissingImports
+            ),
+
+            // Read the "reportUnusedImport" entry.
+            reportUnusedImport: this._convertDiagnosticLevel(
+                configObj.reportUnusedImport,
+                DiagnosticRule.reportUnusedImport,
+                defaultSettings.reportUnusedImport
+            ),
+
+            // Read the "reportUnusedClass" entry.
+            reportUnusedClass: this._convertDiagnosticLevel(
+                configObj.reportUnusedClass,
+                DiagnosticRule.reportUnusedClass,
+                defaultSettings.reportUnusedClass
+            ),
+
+            // Read the "reportUnusedFunction" entry.
+            reportUnusedFunction: this._convertDiagnosticLevel(
+                configObj.reportUnusedFunction,
+                DiagnosticRule.reportUnusedFunction,
+                defaultSettings.reportUnusedFunction
+            ),
+
+            // Read the "reportUnusedVariable" entry.
+            reportUnusedVariable: this._convertDiagnosticLevel(
+                configObj.reportUnusedVariable,
+                DiagnosticRule.reportUnusedVariable,
+                defaultSettings.reportUnusedVariable
+            ),
+
+            // Read the "reportDuplicateImport" entry.
+            reportDuplicateImport: this._convertDiagnosticLevel(
+                configObj.reportDuplicateImport,
+                DiagnosticRule.reportDuplicateImport,
+                defaultSettings.reportDuplicateImport
+            ),
+
+            // Read the "reportWildcardImportFromLibrary" entry.
+            reportWildcardImportFromLibrary: this._convertDiagnosticLevel(
+                configObj.reportWildcardImportFromLibrary,
+                DiagnosticRule.reportWildcardImportFromLibrary,
+                defaultSettings.reportWildcardImportFromLibrary
+            ),
+
+            // Read the "reportMissingModuleSource" entry.
+            reportMissingModuleSource: this._convertDiagnosticLevel(
+                configObj.reportMissingModuleSource,
+                DiagnosticRule.reportMissingModuleSource,
+                defaultSettings.reportMissingModuleSource
+            ),
+
+            // Read the "reportMissingTypeStubs" entry.
+            reportMissingTypeStubs: this._convertDiagnosticLevel(
+                configObj.reportMissingTypeStubs,
+                DiagnosticRule.reportMissingTypeStubs,
+                defaultSettings.reportMissingTypeStubs
+            ),
+
+            // Read the "reportImportCycles" entry.
+            reportImportCycles: this._convertDiagnosticLevel(
+                configObj.reportImportCycles,
+                DiagnosticRule.reportImportCycles,
+                defaultSettings.reportImportCycles
+            ),
+
+            // Read the "reportOptionalSubscript" entry.
+            reportOptionalSubscript: this._convertDiagnosticLevel(
+                configObj.reportOptionalSubscript,
+                DiagnosticRule.reportOptionalSubscript,
+                defaultSettings.reportOptionalSubscript
+            ),
+
+            // Read the "reportOptionalMemberAccess" entry.
+            reportOptionalMemberAccess: this._convertDiagnosticLevel(
+                configObj.reportOptionalMemberAccess,
+                DiagnosticRule.reportOptionalMemberAccess,
+                defaultSettings.reportOptionalMemberAccess
+            ),
+
+            // Read the "reportOptionalCall" entry.
+            reportOptionalCall: this._convertDiagnosticLevel(
+                configObj.reportOptionalCall,
+                DiagnosticRule.reportOptionalCall,
+                defaultSettings.reportOptionalCall
+            ),
+
+            // Read the "reportOptionalIterable" entry.
+            reportOptionalIterable: this._convertDiagnosticLevel(
+                configObj.reportOptionalIterable,
+                DiagnosticRule.reportOptionalIterable,
+                defaultSettings.reportOptionalIterable
+            ),
+
+            // Read the "reportOptionalContextManager" entry.
+            reportOptionalContextManager: this._convertDiagnosticLevel(
+                configObj.reportOptionalContextManager,
+                DiagnosticRule.reportOptionalContextManager,
+                defaultSettings.reportOptionalContextManager
+            ),
+
+            // Read the "reportOptionalOperand" entry.
+            reportOptionalOperand: this._convertDiagnosticLevel(
+                configObj.reportOptionalOperand,
+                DiagnosticRule.reportOptionalOperand,
+                defaultSettings.reportOptionalOperand
+            ),
+
+            // Read the "reportTypedDictNotRequiredAccess" entry.
+            reportTypedDictNotRequiredAccess: this._convertDiagnosticLevel(
+                configObj.reportTypedDictNotRequiredAccess,
+                DiagnosticRule.reportTypedDictNotRequiredAccess,
+                defaultSettings.reportTypedDictNotRequiredAccess
+            ),
+
+            // Read the "reportUntypedFunctionDecorator" entry.
+            reportUntypedFunctionDecorator: this._convertDiagnosticLevel(
+                configObj.reportUntypedFunctionDecorator,
+                DiagnosticRule.reportUntypedFunctionDecorator,
+                defaultSettings.reportUntypedFunctionDecorator
+            ),
+
+            // Read the "reportUntypedClassDecorator" entry.
+            reportUntypedClassDecorator: this._convertDiagnosticLevel(
+                configObj.reportUntypedClassDecorator,
+                DiagnosticRule.reportUntypedClassDecorator,
+                defaultSettings.reportUntypedClassDecorator
+            ),
+
+            // Read the "reportUntypedBaseClass" entry.
+            reportUntypedBaseClass: this._convertDiagnosticLevel(
+                configObj.reportUntypedBaseClass,
+                DiagnosticRule.reportUntypedBaseClass,
+                defaultSettings.reportUntypedBaseClass
+            ),
+
+            // Read the "reportUntypedNamedTuple" entry.
+            reportUntypedNamedTuple: this._convertDiagnosticLevel(
+                configObj.reportUntypedNamedTuple,
+                DiagnosticRule.reportUntypedNamedTuple,
+                defaultSettings.reportUntypedNamedTuple
+            ),
+
+            // Read the "reportPrivateUsage" entry.
+            reportPrivateUsage: this._convertDiagnosticLevel(
+                configObj.reportPrivateUsage,
+                DiagnosticRule.reportPrivateUsage,
+                defaultSettings.reportPrivateUsage
+            ),
+
+            // Read the "reportPrivateImportUsage" entry.
+            reportPrivateImportUsage: this._convertDiagnosticLevel(
+                configObj.reportPrivateImportUsage,
+                DiagnosticRule.reportPrivateImportUsage,
+                defaultSettings.reportPrivateImportUsage
+            ),
+
+            // Read the "reportConstantRedefinition" entry.
+            reportConstantRedefinition: this._convertDiagnosticLevel(
+                configObj.reportConstantRedefinition,
+                DiagnosticRule.reportConstantRedefinition,
+                defaultSettings.reportConstantRedefinition
+            ),
+
+            // Read the "reportIncompatibleMethodOverride" entry.
+            reportIncompatibleMethodOverride: this._convertDiagnosticLevel(
+                configObj.reportIncompatibleMethodOverride,
+                DiagnosticRule.reportIncompatibleMethodOverride,
+                defaultSettings.reportIncompatibleMethodOverride
+            ),
+
+            // Read the "reportIncompatibleVariableOverride" entry.
+            reportIncompatibleVariableOverride: this._convertDiagnosticLevel(
+                configObj.reportIncompatibleVariableOverride,
+                DiagnosticRule.reportIncompatibleVariableOverride,
+                defaultSettings.reportIncompatibleVariableOverride
+            ),
+
+            // Read the "reportOverlappingOverload" entry.
+            reportOverlappingOverload: this._convertDiagnosticLevel(
+                configObj.reportOverlappingOverload,
+                DiagnosticRule.reportOverlappingOverload,
+                defaultSettings.reportOverlappingOverload
+            ),
+
+            // Read the "reportUninitializedInstanceVariable" entry.
+            reportUninitializedInstanceVariable: this._convertDiagnosticLevel(
+                configObj.reportUninitializedInstanceVariable,
+                DiagnosticRule.reportUninitializedInstanceVariable,
+                defaultSettings.reportUninitializedInstanceVariable
+            ),
+
+            // Read the "reportInvalidStringEscapeSequence" entry.
+            reportInvalidStringEscapeSequence: this._convertDiagnosticLevel(
+                configObj.reportInvalidStringEscapeSequence,
+                DiagnosticRule.reportInvalidStringEscapeSequence,
+                defaultSettings.reportInvalidStringEscapeSequence
+            ),
+
+            // Read the "reportUnknownParameterType" entry.
+            reportUnknownParameterType: this._convertDiagnosticLevel(
+                configObj.reportUnknownParameterType,
+                DiagnosticRule.reportUnknownParameterType,
+                defaultSettings.reportUnknownParameterType
+            ),
+
+            // Read the "reportUnknownArgumentType" entry.
+            reportUnknownArgumentType: this._convertDiagnosticLevel(
+                configObj.reportUnknownArgumentType,
+                DiagnosticRule.reportUnknownArgumentType,
+                defaultSettings.reportUnknownArgumentType
+            ),
+
+            // Read the "reportUnknownLambdaType" entry.
+            reportUnknownLambdaType: this._convertDiagnosticLevel(
+                configObj.reportUnknownLambdaType,
+                DiagnosticRule.reportUnknownLambdaType,
+                defaultSettings.reportUnknownLambdaType
+            ),
+
+            // Read the "reportUnknownVariableType" entry.
+            reportUnknownVariableType: this._convertDiagnosticLevel(
+                configObj.reportUnknownVariableType,
+                DiagnosticRule.reportUnknownVariableType,
+                defaultSettings.reportUnknownVariableType
+            ),
+
+            // Read the "reportUnknownMemberType" entry.
+            reportUnknownMemberType: this._convertDiagnosticLevel(
+                configObj.reportUnknownMemberType,
+                DiagnosticRule.reportUnknownMemberType,
+                defaultSettings.reportUnknownMemberType
+            ),
+
+            // Read the "reportMissingParameterType" entry.
+            reportMissingParameterType: this._convertDiagnosticLevel(
+                configObj.reportMissingParameterType,
+                DiagnosticRule.reportMissingParameterType,
+                defaultSettings.reportMissingParameterType
+            ),
+
+            // Read the "reportMissingTypeArgument" entry.
+            reportMissingTypeArgument: this._convertDiagnosticLevel(
+                configObj.reportMissingTypeArgument,
+                DiagnosticRule.reportMissingTypeArgument,
+                defaultSettings.reportMissingTypeArgument
+            ),
+
+            // Read the "reportInvalidTypeVarUse" entry.
+            reportInvalidTypeVarUse: this._convertDiagnosticLevel(
+                configObj.reportInvalidTypeVarUse,
+                DiagnosticRule.reportInvalidTypeVarUse,
+                defaultSettings.reportInvalidTypeVarUse
+            ),
+
+            // Read the "reportCallInDefaultInitializer" entry.
+            reportCallInDefaultInitializer: this._convertDiagnosticLevel(
+                configObj.reportCallInDefaultInitializer,
+                DiagnosticRule.reportCallInDefaultInitializer,
+                defaultSettings.reportCallInDefaultInitializer
+            ),
+
+            // Read the "reportUnnecessaryIsInstance" entry.
+            reportUnnecessaryIsInstance: this._convertDiagnosticLevel(
+                configObj.reportUnnecessaryIsInstance,
+                DiagnosticRule.reportUnnecessaryIsInstance,
+                defaultSettings.reportUnnecessaryIsInstance
+            ),
+
+            // Read the "reportUnnecessaryCast" entry.
+            reportUnnecessaryCast: this._convertDiagnosticLevel(
+                configObj.reportUnnecessaryCast,
+                DiagnosticRule.reportUnnecessaryCast,
+                defaultSettings.reportUnnecessaryCast
+            ),
+
+            // Read the "reportUnnecessaryComparison" entry.
+            reportUnnecessaryComparison: this._convertDiagnosticLevel(
+                configObj.reportUnnecessaryComparison,
+                DiagnosticRule.reportUnnecessaryComparison,
+                defaultSettings.reportUnnecessaryComparison
+            ),
+
+            // Read the "reportAssertAlwaysTrue" entry.
+            reportAssertAlwaysTrue: this._convertDiagnosticLevel(
+                configObj.reportAssertAlwaysTrue,
+                DiagnosticRule.reportAssertAlwaysTrue,
+                defaultSettings.reportAssertAlwaysTrue
+            ),
+
+            // Read the "reportSelfClsParameterName" entry.
+            reportSelfClsParameterName: this._convertDiagnosticLevel(
+                configObj.reportSelfClsParameterName,
+                DiagnosticRule.reportSelfClsParameterName,
+                defaultSettings.reportSelfClsParameterName
+            ),
+
+            // Read the "reportImplicitStringConcatenation" entry.
+            reportImplicitStringConcatenation: this._convertDiagnosticLevel(
+                configObj.reportImplicitStringConcatenation,
+                DiagnosticRule.reportImplicitStringConcatenation,
+                defaultSettings.reportImplicitStringConcatenation
+            ),
+
+            // Read the "reportUndefinedVariable" entry.
+            reportUndefinedVariable: this._convertDiagnosticLevel(
+                configObj.reportUndefinedVariable,
+                DiagnosticRule.reportUndefinedVariable,
+                defaultSettings.reportUndefinedVariable
+            ),
+
+            // Read the "reportUnboundVariable" entry.
+            reportUnboundVariable: this._convertDiagnosticLevel(
+                configObj.reportUnboundVariable,
+                DiagnosticRule.reportUnboundVariable,
+                defaultSettings.reportUnboundVariable
+            ),
+
+            // Read the "reportInvalidStubStatement" entry.
+            reportInvalidStubStatement: this._convertDiagnosticLevel(
+                configObj.reportInvalidStubStatement,
+                DiagnosticRule.reportInvalidStubStatement,
+                defaultSettings.reportInvalidStubStatement
+            ),
+
+            // Read the "reportIncompleteStub" entry.
+            reportIncompleteStub: this._convertDiagnosticLevel(
+                configObj.reportIncompleteStub,
+                DiagnosticRule.reportIncompleteStub,
+                defaultSettings.reportIncompleteStub
+            ),
+
+            // Read the "reportUnsupportedDunderAll" entry.
+            reportUnsupportedDunderAll: this._convertDiagnosticLevel(
+                configObj.reportUnsupportedDunderAll,
+                DiagnosticRule.reportUnsupportedDunderAll,
+                defaultSettings.reportUnsupportedDunderAll
+            ),
+
+            // Read the "reportUnusedCallResult" entry.
+            reportUnusedCallResult: this._convertDiagnosticLevel(
+                configObj.reportUnusedCallResult,
+                DiagnosticRule.reportUnusedCallResult,
+                defaultSettings.reportUnusedCallResult
+            ),
+
+            // Read the "reportUnusedCoroutine" entry.
+            reportUnusedCoroutine: this._convertDiagnosticLevel(
+                configObj.reportUnusedCoroutine,
+                DiagnosticRule.reportUnusedCoroutine,
+                defaultSettings.reportUnusedCoroutine
+            ),
+        };
 
         // Read the "venvPath".
         this.venvPath = undefined;
@@ -1138,7 +1508,7 @@ export class ConfigOptions {
                 const path = resolvePaths(this.projectRoot, p);
                 paths.push(path);
                 if (isDirectory(fs, path)) {
-                    appendArray(paths, getPathsFromPthFiles(fs, path));
+                    paths.push(...getPathsFromPthFiles(fs, path));
                 }
             }
         }
@@ -1153,11 +1523,8 @@ export class ConfigOptions {
             return;
         }
 
-        for (const ruleName of getDiagLevelDiagnosticRules()) {
-            const severity = diagnosticSeverityOverrides[ruleName];
-            if (severity !== undefined) {
-                (this.diagnosticRuleSet as any)[ruleName] = severity;
-            }
+        for (const [ruleName, severity] of Object.entries(diagnosticSeverityOverrides)) {
+            (this.diagnosticRuleSet as any)[ruleName] = severity;
         }
     }
 

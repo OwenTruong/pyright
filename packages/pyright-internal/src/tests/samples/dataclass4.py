@@ -44,9 +44,6 @@ class Baz1:
     # defaults.
     ccc: str
 
-    def __init__(self) -> None:
-        pass
-
 
 @dataclass
 class Baz2:

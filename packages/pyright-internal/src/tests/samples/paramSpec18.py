@@ -1,6 +1,6 @@
 # This sample tests the handling of a ParamSpec within a callback protocol.
 
-from typing import Callable, Concatenate, ParamSpec, Protocol
+from typing import Callable, Concatenate, Literal, ParamSpec, Protocol
 
 
 P = ParamSpec("P")
@@ -18,7 +18,7 @@ def func_with_callable(cb: FooCallableWithConcatenate[P]) -> Callable[P, bool]:
 
 
 x1 = func_with_callable(callback)
-reveal_type(x1, expected_text="(b: str, c: str) -> bool")
+t1: Literal["(b: str, c: str) -> bool"] = reveal_type(x1)
 
 
 class FooWithConcatenate(Protocol[P]):
@@ -31,7 +31,7 @@ def func_with_protocol(cb: FooWithConcatenate[P]) -> Callable[P, bool]:
 
 
 x2 = func_with_protocol(callback)
-reveal_type(x2, expected_text="(b: str, c: str) -> bool")
+t2: Literal["(b: str, c: str) -> bool"] = reveal_type(x2)
 
 
 class CallbackPos(Protocol[P]):

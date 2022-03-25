@@ -1,6 +1,6 @@
 # This sample validates the Python 3.7 data class feature.
 
-from typing import ClassVar, Final, Hashable, NamedTuple, Optional
+from typing import ClassVar, Final, NamedTuple, Optional
 
 
 class Other:
@@ -31,9 +31,6 @@ d2 = DataTuple(id=1, aid=Other(), value="v")
 d3 = DataTuple(id=1, aid=Other(), name="hello")
 d4 = DataTuple(id=1, aid=Other(), name=None)
 id = d1.id
-
-h4: Hashable = d4
-v = d3 == d4
 
 # This should generate an error because the name argument
 # is the incorrect type.

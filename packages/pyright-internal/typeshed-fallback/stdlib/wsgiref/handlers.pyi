@@ -1,14 +1,12 @@
 from abc import abstractmethod
 from types import TracebackType
-from typing import IO, Callable, MutableMapping
+from typing import IO, Callable, MutableMapping, Optional, Tuple, Type
 
 from .headers import Headers
 from .types import ErrorStream, InputStream, StartResponse, WSGIApplication, WSGIEnvironment
 from .util import FileWrapper
 
-__all__ = ["BaseHandler", "SimpleHandler", "BaseCGIHandler", "CGIHandler", "IISCGIHandler", "read_environ"]
-
-_exc_info = tuple[type[BaseException] | None, BaseException | None, TracebackType | None]
+_exc_info = Tuple[Optional[Type[BaseException]], Optional[BaseException], Optional[TracebackType]]
 
 def format_date_time(timestamp: float | None) -> str: ...  # undocumented
 def read_environ() -> dict[str, str]: ...
@@ -25,8 +23,8 @@ class BaseHandler:
 
     os_environ: MutableMapping[str, str]
 
-    wsgi_file_wrapper: type[FileWrapper] | None
-    headers_class: type[Headers]  # undocumented
+    wsgi_file_wrapper: Type[FileWrapper] | None
+    headers_class: Type[Headers]  # undocumented
 
     traceback_limit: int | None
     error_status: str

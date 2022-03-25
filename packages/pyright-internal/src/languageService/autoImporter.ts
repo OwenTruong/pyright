@@ -23,7 +23,6 @@ import { SourceFileInfo } from '../analyzer/program';
 import { Symbol } from '../analyzer/symbol';
 import * as SymbolNameUtils from '../analyzer/symbolNameUtils';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
-import { appendArray } from '../common/collectionUtils';
 import { ExecutionEnvironment } from '../common/configOptions';
 import { TextEditAction } from '../common/editAction';
 import { combinePaths, getDirectoryPath, getFileName, stripFileExtension } from '../common/pathUtils';
@@ -32,7 +31,6 @@ import { Position } from '../common/textRange';
 import { Duration } from '../common/timing';
 import { ParseNodeType } from '../parser/parseNodes';
 import { ParseResults } from '../parser/parser';
-import { CompletionMap } from './completionProvider';
 import { IndexAliasData, IndexResults } from './documentSymbolProvider';
 
 export interface AutoImportSymbol {
@@ -188,7 +186,7 @@ export class AutoImporter {
         private _importResolver: ImportResolver,
         private _parseResults: ParseResults,
         private _invocationPosition: Position,
-        private readonly _excludes: CompletionMap,
+        private _excludes: Set<string>,
         private _moduleSymbolMap: ModuleSymbolMap,
         private _options: AutoImportOptions
     ) {
@@ -216,7 +214,7 @@ export class AutoImporter {
         const results: AutoImportResult[] = [];
         const map = this._getCandidates(word, similarityLimit, abbrFromUsers, token);
 
-        map.forEach((v) => appendArray(results, v));
+        map.forEach((v) => results.push(...v));
         return results;
     }
 
@@ -659,12 +657,8 @@ export class AutoImporter {
         return this._options.patternMatcher(word, name);
     }
 
-    private _shouldExclude(name: string) {
-        return this._excludes.has(name, CompletionMap.labelOnlyIgnoringAutoImports);
-    }
-
     private _containsName(name: string, source: string | undefined, results: AutoImportResultMap) {
-        if (this._shouldExclude(name)) {
+        if (this._excludes.has(name)) {
             return true;
         }
 

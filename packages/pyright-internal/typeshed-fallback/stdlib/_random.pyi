@@ -1,7 +1,9 @@
-# Actually Tuple[(int,) * 625]
-_State = tuple[int, ...]
+from typing import Tuple
 
-class Random:
+# Actually Tuple[(int,) * 625]
+_State = Tuple[int, ...]
+
+class Random(object):
     def __init__(self, seed: object = ...) -> None: ...
     def seed(self, __n: object = ...) -> None: ...
     def getstate(self) -> _State: ...

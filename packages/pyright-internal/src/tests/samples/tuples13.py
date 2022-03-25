@@ -1,26 +1,26 @@
 # This sample tests indexing of tuples with slice expressions.
 
-from typing import Tuple
+from typing import Literal, Tuple
 
 
 def func1(val1: Tuple[int, str, None], val2: Tuple[int, ...]):
     x1 = val1[:2]
-    reveal_type(x1, expected_text="tuple[int, str]")
+    t1: Literal["tuple[int, str]"] = reveal_type(x1)
 
     x2 = val1[-3:2]
-    reveal_type(x2, expected_text="tuple[int, str]")
+    t2: Literal["tuple[int, str]"] = reveal_type(x2)
 
     x3 = val1[1:]
-    reveal_type(x3, expected_text="tuple[str, None]")
+    t3: Literal["tuple[str, None]"] = reveal_type(x3)
 
     x4 = val1[1:-1]
-    reveal_type(x4, expected_text="tuple[str]")
+    t4: Literal["tuple[str]"] = reveal_type(x4)
 
     x5 = val1[:-2]
-    reveal_type(x5, expected_text="tuple[int]")
+    t5: Literal["tuple[int]"] = reveal_type(x5)
 
     x6 = val1[0:100]
-    reveal_type(x6, expected_text="tuple[int | str | None, ...]")
+    t6: Literal["Tuple[int | str | None, ...]"] = reveal_type(x6)
 
     x7 = val2[:2]
-    reveal_type(x7, expected_text="tuple[int, ...]")
+    t7: Literal["Tuple[int, ...]"] = reveal_type(x7)

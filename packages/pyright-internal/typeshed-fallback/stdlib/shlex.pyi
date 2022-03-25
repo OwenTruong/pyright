@@ -1,11 +1,5 @@
 import sys
-from _typeshed import Self
-from typing import Iterable, TextIO
-
-if sys.version_info >= (3, 8):
-    __all__ = ["shlex", "split", "quote", "join"]
-else:
-    __all__ = ["shlex", "split", "quote"]
+from typing import Any, Iterable, TextIO, TypeVar
 
 def split(s: str, comments: bool = ..., posix: bool = ...) -> list[str]: ...
 
@@ -13,6 +7,8 @@ if sys.version_info >= (3, 8):
     def join(split_command: Iterable[str]) -> str: ...
 
 def quote(s: str) -> str: ...
+
+_SLT = TypeVar("_SLT", bound=shlex)
 
 class shlex(Iterable[str]):
     commenters: str
@@ -22,18 +18,14 @@ class shlex(Iterable[str]):
     quotes: str
     escapedquotes: str
     whitespace_split: bool
-    infile: str | None
+    infile: str
     instream: TextIO
     source: str
     debug: int
     lineno: int
     token: str
     eof: str
-    if sys.version_info >= (3, 7):
-        @property
-        def punctuation_chars(self) -> str: ...
-    else:
-        punctuation_chars: str
+    punctuation_chars: str
     def __init__(
         self,
         instream: str | TextIO | None = ...,
@@ -45,8 +37,9 @@ class shlex(Iterable[str]):
     def push_token(self, tok: str) -> None: ...
     def read_token(self) -> str: ...
     def sourcehook(self, newfile: str) -> tuple[str, TextIO]: ...
-    def push_source(self, newstream: str | TextIO, newfile: str | None = ...) -> None: ...
+    # TODO argument types
+    def push_source(self, newstream: Any, newfile: Any = ...) -> None: ...
     def pop_source(self) -> None: ...
     def error_leader(self, infile: str | None = ..., lineno: int | None = ...) -> None: ...
-    def __iter__(self: Self) -> Self: ...
+    def __iter__(self: _SLT) -> _SLT: ...
     def __next__(self) -> str: ...

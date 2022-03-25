@@ -1,5 +1,4 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import ImageFile
 
@@ -10,8 +9,8 @@ def i(c): ...
 def dump(c) -> None: ...
 
 class IptcImageFile(ImageFile):
-    format: ClassVar[Literal["IPTC"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
     def getint(self, key): ...
     def field(self): ...
     im: Any

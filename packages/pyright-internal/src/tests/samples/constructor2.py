@@ -52,129 +52,129 @@ class Bat(Animal[int, int], CaveDweller[int]):
 def s1():
     b: Bear[str] = Bear()
     a: Animal[str, int] = b
-    reveal_type(a, expected_text="Bear[str]")
+    t: Literal["Bear[str]"] = reveal_type(a)
 
 
 def s2():
     a: Animal[str, int] = Bear()
-    reveal_type(a, expected_text="Bear[str]")
+    t: Literal["Bear[str]"] = reveal_type(a)
 
 
 def s3():
     a: Animal[str, int] = Bear()
-    reveal_type(a, expected_text="Bear[str]")
+    t: Literal["Bear[str]"] = reveal_type(a)
 
 
 def s4():
     a: Bear[Any] = Bear[int]()
-    reveal_type(a, expected_text="Bear[Any]")
+    t: Literal["Bear[Any]"] = reveal_type(a)
 
 
 def s5():
     a: Animal[Any, Any] = Bear[int]()
-    reveal_type(a, expected_text="Bear[Any]")
+    t: Literal["Bear[Any]"] = reveal_type(a)
 
 
 def s6():
     a: Union[Bat, Bear[str]] = Bear()
-    reveal_type(a, expected_text="Bear[str]")
+    t: Literal["Bear[str]"] = reveal_type(a)
 
 
 def s7(p: Union[Bat, Bear[int]]):
     a: Animal[int, int] = p
-    reveal_type(a, expected_text="Bat | Bear[int]")
+    t: Literal["Bat | Bear[int]"] = reveal_type(a)
 
 
 def s8():
     a: Animal[int, int] = Bear[int]()
-    reveal_type(a, expected_text="Bear[int]")
+    t: Literal["Bear[int]"] = reveal_type(a)
 
 
 def s9(p: Dict[str, str]):
     a: Dict[str, Any] = p
-    reveal_type(a, expected_text="Dict[str, Any]")
+    t: Literal["Dict[str, Any]"] = reveal_type(a)
 
 
 def s10(p: List[str]):
     a: Iterable[Any] = p
-    reveal_type(a, expected_text="List[Any]")
+    t1: Literal["List[Any]"] = reveal_type(a)
     b: Iterable[str] = []
-    reveal_type(b, expected_text="list[str]")
+    t2: Literal["list[str]"] = reveal_type(b)
     c: Iterable[str] = list()
-    reveal_type(c, expected_text="list[str]")
+    t3: Literal["list[str]"] = reveal_type(c)
 
 
 def s11():
     a: Animal[Any, Any] = Donkey[int]()
-    reveal_type(a, expected_text="Donkey[int]")
+    t: Literal["Donkey[int]"] = reveal_type(a)
 
 
 def s12(p: Bear[_T1], b: _T1):
     a: Animal[Any, int] = p
-    reveal_type(a, expected_text="Bear[Any]")
+    t: Literal["Bear[Any]"] = reveal_type(a)
 
 
 def s13(p: Bat):
     a: Flyer[int] = p
-    reveal_type(a, expected_text="Bat")
+    t: Literal["Bat"] = reveal_type(a)
 
 
 def s14(p: Bat):
     a: CaveDweller[int] = p
-    reveal_type(a, expected_text="Bat")
+    t: Literal["Bat"] = reveal_type(a)
 
 
 def s15():
     a = Bear(1)
-    reveal_type(a, expected_text="Bear[int]")
+    t1: Literal["Bear[int]"] = reveal_type(a)
     b = Bear[int](1)
-    reveal_type(b, expected_text="Bear[int]")
+    t2: Literal["Bear[int]"] = reveal_type(b)
     c = Bear[float](1)
-    reveal_type(c, expected_text="Bear[float]")
+    t3: Literal["Bear[float]"] = reveal_type(c)
     d = Bear[Union[str, int]](1)
-    reveal_type(d, expected_text="Bear[str | int]")
+    t4: Literal["Bear[str | int]"] = reveal_type(d)
 
 
 def s16():
     a: Any = Bear(1)
-    reveal_type(a, expected_text="Any")
+    t: Literal["Any"] = reveal_type(a)
 
 
 def s17():
     a1: Iterable[object] = [2, 3, 4]
-    reveal_type(a1, expected_text="list[int]")
+    ta1: Literal["list[int]"] = reveal_type(a1)
 
     a2: List[object] = [2, 3, 4]
-    reveal_type(a2, expected_text="list[object]")
+    ta2: Literal["list[object]"] = reveal_type(a2)
 
     b1: Iterable[float] = [2, 3, 4]
-    reveal_type(b1, expected_text="list[int]")
+    tb1: Literal["list[int]"] = reveal_type(b1)
 
     b2: List[float] = [2, 3, 4]
-    reveal_type(b2, expected_text="list[float]")
+    tb2: Literal["list[float]"] = reveal_type(b2)
 
     c1: Iterable[Literal["A", "B", "C"]] = ["A", "B"]
-    reveal_type(c1, expected_text="list[Literal['A', 'B']]")
+    tc1: Literal["list[Literal['A', 'B']]"] = reveal_type(c1)
 
     c2: List[Literal["A", "B", "C"]] = ["A", "B"]
-    reveal_type(c2, expected_text="list[Literal['A', 'B', 'C']]")
+    tc2: Literal["list[Literal['A', 'B', 'C']]"] = reveal_type(c2)
 
 
 def s18():
     a1: Mapping[object, object] = {"a": 3, "b": 5.6}
-    reveal_type(a1, expected_text="dict[object, float]")
+    ta1: Literal["dict[object, float]"] = reveal_type(a1)
 
     a2: Dict[object, object] = {"a": 3, "b": 5.6}
-    reveal_type(a2, expected_text="dict[object, object]")
+    ta2: Literal["dict[object, object]"] = reveal_type(a2)
 
     b1: Mapping[str, float] = {"a": 3, "b": 5}
-    reveal_type(b1, expected_text="dict[str, int]")
+    tb1: Literal["dict[str, int]"] = reveal_type(b1)
 
     b2: Dict[str, float] = {"a": 3, "b": 5}
-    reveal_type(b2, expected_text="dict[str, float]")
+    tb2: Literal["dict[str, float]"] = reveal_type(b2)
 
     c1: Mapping[Literal["A", "B"], Literal[3, 4]] = {"A": 3}
-    reveal_type(c1, expected_text="dict[Literal['A', 'B'], Literal[3]]")
+    tc1: Literal["dict[Literal['A', 'B'], Literal[3]]"] = reveal_type(c1)
 
     c2: Dict[Literal["A", "B"], Literal[3, 4]] = {"A": 3}
-    reveal_type(c2, expected_text="dict[Literal['A', 'B'], Literal[3, 4]]")
+    tc2: Literal["dict[Literal['A', 'B'], Literal[3, 4]]"] = reveal_type(c2)

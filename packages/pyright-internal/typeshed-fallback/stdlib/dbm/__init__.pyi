@@ -1,12 +1,10 @@
 from _typeshed import Self
 from types import TracebackType
-from typing import Iterator, MutableMapping
+from typing import Iterator, MutableMapping, Tuple, Type, Union
 from typing_extensions import Literal
 
-__all__ = ["open", "whichdb", "error"]
-
-_KeyType = str | bytes
-_ValueType = str | bytes
+_KeyType = Union[str, bytes]
+_ValueType = Union[str, bytes]
 _TFlags = Literal[
     "r",
     "w",
@@ -84,12 +82,12 @@ class _Database(MutableMapping[_KeyType, bytes]):
     def __del__(self) -> None: ...
     def __enter__(self: Self) -> Self: ...
     def __exit__(
-        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None
+        self, exc_type: Type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None
     ) -> None: ...
 
 class _error(Exception): ...
 
-error: tuple[type[_error], type[OSError]]
+error = Tuple[Type[_error], Type[OSError]]
 
 def whichdb(filename: str) -> str: ...
 def open(file: str, flag: _TFlags = ..., mode: int = ...) -> _Database: ...

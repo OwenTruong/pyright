@@ -1,5 +1,5 @@
 from collections.abc import Callable, Container, Iterable
-from typing import Any, Pattern
+from typing import Any, Dict, List, Pattern, Union
 
 from .html5lib_shim import BleachHTMLParser, BleachHTMLSerializer, SanitizerFilter
 
@@ -15,7 +15,7 @@ INVISIBLE_REPLACEMENT_CHAR: str
 # A html5lib Filter class
 _Filter = Any
 
-class Cleaner:
+class Cleaner(object):
     tags: Container[str]
     attributes: _Attributes
     styles: Container[str]
@@ -39,8 +39,8 @@ class Cleaner:
     def clean(self, text: str) -> str: ...
 
 _AttributeFilter = Callable[[str, str, str], bool]
-_AttributeDict = dict[str, list[str] | _AttributeFilter] | dict[str, list[str]] | dict[str, _AttributeFilter]
-_Attributes = _AttributeFilter | _AttributeDict | list[str]
+_AttributeDict = Union[Dict[str, Union[List[str], _AttributeFilter]], Dict[str, List[str]], Dict[str, _AttributeFilter]]
+_Attributes = Union[_AttributeFilter, _AttributeDict, List[str]]
 
 def attribute_filter_factory(attributes: _Attributes) -> _AttributeFilter: ...
 

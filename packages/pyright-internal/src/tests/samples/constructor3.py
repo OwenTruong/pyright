@@ -6,13 +6,13 @@
 
 from concurrent.futures import Future, wait
 from itertools import chain
-from typing import Any, Dict
+from typing import Any, Dict, Literal
 
 my_list = list(chain([0]))
-reveal_type(my_list, expected_text="list[int]")
+t1: Literal["list[int]"] = reveal_type(my_list)
 
 
 pending: Dict[Future[Any], Any] = {}
 done_tasks = wait(list(pending.keys())).done
 
-reveal_type(done_tasks, expected_text="set[Future[Any]]")
+t2: Literal["set[Future[Any]]"] = reveal_type(done_tasks)

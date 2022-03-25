@@ -1,5 +1,4 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import StubImageFile
 
@@ -11,6 +10,6 @@ class WmfHandler:
     def load(self, im): ...
 
 class WmfStubImageFile(StubImageFile):
-    format: ClassVar[Literal["WMF"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
     def load(self, dpi: Any | None = ...) -> None: ...

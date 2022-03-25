@@ -1,10 +1,10 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .JpegImagePlugin import JpegImageFile
 
 class MpoImageFile(JpegImageFile):
-    format: ClassVar[Literal["MPO"]]
+    format: str
+    format_description: str
     def load_seek(self, pos) -> None: ...
     fp: Any
     offset: Any

@@ -21,7 +21,7 @@ def build_email_re(tlds: Iterable[str] = ...) -> Pattern[str]: ...
 
 EMAIL_RE: Pattern[str]
 
-class Linker:
+class Linker(object):
     def __init__(
         self,
         callbacks: Iterable[_Callback] = ...,

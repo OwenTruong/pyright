@@ -1,7 +1,7 @@
 # This sample tests the alternative syntax for unions as
 # documented in PEP 604.
 
-from typing import Callable, Generic, TypeVar, Union
+from typing import Callable, Generic, Literal, TypeVar, Union
 
 
 def foo2(a: int | str):
@@ -36,8 +36,8 @@ def foo5(a: str):
     class Baz(Generic[T]):
         qux: T | None
 
-    reveal_type(helper(a), expected_text="str | None")
-    reveal_type(Baz[str].qux, expected_text="str | None")
+    t1: Literal["str | None"] = reveal_type(helper(a))
+    t2: Literal["str | None"] = reveal_type(Baz[str].qux)
 
 
 T = TypeVar("T")
@@ -69,11 +69,3 @@ a_or_str: "ClassA.ClassA_A | str"
 b_or_str: "ClassA.ClassA_B | str"
 b_or_str_Union: Union[ClassA.ClassA_B, str]
 c_or_str: "ClassA.ClassA_C | str"
-
-Alias1 = None | str
-Alias2 = str | None
-
-_T = TypeVar("_T")
-
-Alias3 = _T | str
-Alias4 = str | _T

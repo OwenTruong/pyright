@@ -3,22 +3,9 @@ import socket
 import ssl
 import sys
 from _typeshed import Self
-from typing import IO, Any, Iterable, NamedTuple
-from typing_extensions import Literal
+from typing import IO, Any, Iterable, NamedTuple, Tuple, Union
 
-__all__ = [
-    "NNTP",
-    "NNTPError",
-    "NNTPReplyError",
-    "NNTPTemporaryError",
-    "NNTPPermanentError",
-    "NNTPProtocolError",
-    "NNTPDataError",
-    "decode_header",
-    "NNTP_SSL",
-]
-
-_File = IO[bytes] | bytes | str | None
+_File = Union[IO[bytes], bytes, str, None]
 
 class NNTPError(Exception):
     response: str
@@ -29,8 +16,8 @@ class NNTPPermanentError(NNTPError): ...
 class NNTPProtocolError(NNTPError): ...
 class NNTPDataError(NNTPError): ...
 
-NNTP_PORT: Literal[119]
-NNTP_SSL_PORT: Literal[563]
+NNTP_PORT: int
+NNTP_SSL_PORT: int
 
 class GroupInfo(NamedTuple):
     group: str
@@ -47,13 +34,11 @@ def decode_header(header_str: str) -> str: ...
 
 _list = list  # conflicts with a method named "list"
 
-class NNTP:
+class _NNTPBase:
     encoding: str
     errors: str
 
     host: str
-    port: int
-    sock: socket.socket
     file: IO[bytes]
     debugging: int
     welcome: str
@@ -62,16 +47,7 @@ class NNTP:
     authenticated: bool
     nntp_implementation: str
     nntp_version: int
-    def __init__(
-        self,
-        host: str,
-        port: int = ...,
-        user: str | None = ...,
-        password: str | None = ...,
-        readermode: bool | None = ...,
-        usenetrc: bool = ...,
-        timeout: float = ...,
-    ) -> None: ...
+    def __init__(self, file: IO[bytes], host: str, readermode: bool | None = ..., timeout: float = ...) -> None: ...
     def __enter__(self: Self) -> Self: ...
     def __exit__(self, *args: Any) -> None: ...
     def getwelcome(self) -> str: ...
@@ -96,12 +72,11 @@ class NNTP:
     def xhdr(self, hdr: str, str: Any, *, file: _File = ...) -> tuple[str, _list[str]]: ...
     def xover(self, start: int, end: int, *, file: _File = ...) -> tuple[str, _list[tuple[int, dict[str, str]]]]: ...
     def over(
-        self, message_spec: None | str | _list[Any] | tuple[Any, ...], *, file: _File = ...
+        self, message_spec: None | str | _list[Any] | Tuple[Any, ...], *, file: _File = ...
     ) -> tuple[str, _list[tuple[int, dict[str, str]]]]: ...
     if sys.version_info < (3, 9):
         def xgtitle(self, group: str, *, file: _File = ...) -> tuple[str, _list[tuple[str, str]]]: ...
         def xpath(self, id: Any) -> tuple[str, str]: ...
-
     def date(self) -> tuple[str, datetime.datetime]: ...
     def post(self, data: bytes | Iterable[bytes]) -> str: ...
     def ihave(self, message_id: Any, data: bytes | Iterable[bytes]) -> str: ...
@@ -109,9 +84,22 @@ class NNTP:
     def login(self, user: str | None = ..., password: str | None = ..., usenetrc: bool = ...) -> None: ...
     def starttls(self, context: ssl.SSLContext | None = ...) -> None: ...
 
-class NNTP_SSL(NNTP):
-    ssl_context: ssl.SSLContext | None
-    sock: ssl.SSLSocket
+class NNTP(_NNTPBase):
+    port: int
+    sock: socket.socket
+    def __init__(
+        self,
+        host: str,
+        port: int = ...,
+        user: str | None = ...,
+        password: str | None = ...,
+        readermode: bool | None = ...,
+        usenetrc: bool = ...,
+        timeout: float = ...,
+    ) -> None: ...
+
+class NNTP_SSL(_NNTPBase):
+    sock: socket.socket
     def __init__(
         self,
         host: str,

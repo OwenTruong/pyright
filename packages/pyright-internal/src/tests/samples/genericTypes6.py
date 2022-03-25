@@ -1,7 +1,7 @@
 # This sample tests the type checker's ability to do
 # TypeVar matching for both constrained TypeVars and unconstrained.
 
-from typing import Generic, TypeVar
+from typing import Generic, Literal, TypeVar
 
 S = TypeVar("S", str, bytes)
 
@@ -36,14 +36,14 @@ class Foo(Generic[U]):
 
 foo = Foo[str]()
 r1 = foo.generic_func1("hi")
-reveal_type(r1, expected_text="str")
+t1: Literal["str"] = reveal_type(r1)
 r2 = foo.generic_func1("hi", test="hi")
-reveal_type(r2, expected_text="str")
+t2: Literal["str"] = reveal_type(r2)
 
 # This should generate an error.
 r3 = foo.generic_func1("hi", test=3)
-reveal_type(r3, expected_text="str")
+t3: Literal["str"] = reveal_type(r3)
 
 # This should generate an error.
 r4 = foo.generic_func1("hi", 3)
-reveal_type(r4, expected_text="str")
+t4: Literal["str"] = reveal_type(r4)

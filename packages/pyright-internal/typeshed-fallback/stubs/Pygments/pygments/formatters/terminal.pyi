@@ -1,15 +1,14 @@
-from typing import Any, TypeVar
+from typing import Any
 
 from pygments.formatter import Formatter
 
-_T = TypeVar("_T", str, bytes)
-
-class TerminalFormatter(Formatter[_T]):
+class TerminalFormatter(Formatter):
     name: str
     aliases: Any
     filenames: Any
     darkbg: Any
     colorscheme: Any
     linenos: Any
+    def __init__(self, **options) -> None: ...
     def format(self, tokensource, outfile): ...
     def format_unencoded(self, tokensource, outfile) -> None: ...

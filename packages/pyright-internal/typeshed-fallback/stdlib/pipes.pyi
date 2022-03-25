@@ -1,7 +1,5 @@
 import os
 
-__all__ = ["Template"]
-
 class Template:
     def __init__(self) -> None: ...
     def reset(self) -> None: ...

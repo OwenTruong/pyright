@@ -1,6 +1,6 @@
 from socket import _RetAddress, socket
 from threading import Thread
-from typing import Protocol
+from typing import Protocol, Tuple
 
 from paramiko.channel import Channel
 from paramiko.message import Message
@@ -18,7 +18,7 @@ SSH2_AGENT_SIGN_RESPONSE: int
 
 class AgentSSH:
     def __init__(self) -> None: ...
-    def get_keys(self) -> tuple[AgentKey, ...]: ...
+    def get_keys(self) -> Tuple[AgentKey, ...]: ...
 
 class AgentProxyThread(Thread):
     def __init__(self, agent: _AgentProxy) -> None: ...

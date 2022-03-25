@@ -7,21 +7,6 @@ if sys.version_info >= (3, 8):
 else:
     from typing import Pattern
 
-__all__ = [
-    "ascii_letters",
-    "ascii_lowercase",
-    "ascii_uppercase",
-    "capwords",
-    "digits",
-    "hexdigits",
-    "octdigits",
-    "printable",
-    "punctuation",
-    "whitespace",
-    "Formatter",
-    "Template",
-]
-
 ascii_letters: str
 ascii_lowercase: str
 ascii_uppercase: str

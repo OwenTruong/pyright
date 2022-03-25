@@ -1,5 +1,7 @@
-AdpcmState = tuple[int, int]
-RatecvState = tuple[int, tuple[tuple[int, int], ...]]
+from typing import Tuple
+
+AdpcmState = Tuple[int, int]
+RatecvState = Tuple[int, Tuple[Tuple[int, int], ...]]
 
 class error(Exception): ...
 

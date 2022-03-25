@@ -1,12 +1,11 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import ImageFile
 
 MODES: Any
 
 class TgaImageFile(ImageFile):
-    format: ClassVar[Literal["TGA"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
 
 SAVE: Any

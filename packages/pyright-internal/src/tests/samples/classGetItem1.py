@@ -2,7 +2,7 @@
 # __class_getitem__ class method.
 
 
-from typing import Generic, TypeVar
+from typing import Generic, Literal, TypeVar
 
 
 class Foo:
@@ -13,7 +13,7 @@ class Foo:
         ...
 
 
-reveal_type(Foo[10, 63], expected_text="Type[Foo]")
+t1: Literal["Type[Foo]"] = reveal_type(Foo[10, 63])
 
 
 _T = TypeVar("_T")
@@ -27,4 +27,4 @@ class Bar(Generic[_T, _S]):
         ...
 
 
-reveal_type(Bar[int, str], expected_text="Type[Bar[int, str]]")
+t2: Literal["Type[Bar[int, str]]"] = reveal_type(Bar[int, str])

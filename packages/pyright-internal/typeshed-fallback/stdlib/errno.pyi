@@ -36,7 +36,6 @@ EMLINK: int
 EPIPE: int
 EDOM: int
 ERANGE: int
-EDEADLK: int
 EDEADLCK: int
 ENAMETOOLONG: int
 ENOLCK: int

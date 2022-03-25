@@ -1,10 +1,9 @@
 import subprocess
-from collections import deque
-from typing import IO, Any, Callable, Sequence
+from typing import IO, Any, Callable, Deque, Optional, Sequence, Tuple, Union
 
 from . import events, futures, protocols, transports
 
-_File = int | IO[Any] | None
+_File = Optional[Union[int, IO[Any]]]
 
 class BaseSubprocessTransport(transports.SubprocessTransport):
 
@@ -15,7 +14,7 @@ class BaseSubprocessTransport(transports.SubprocessTransport):
     _pid: int | None  # undocumented
     _returncode: int | None  # undocumented
     _exit_waiters: list[futures.Future[Any]]  # undocumented
-    _pending_calls: deque[tuple[Callable[..., Any], tuple[Any, ...]]]  # undocumented
+    _pending_calls: Deque[tuple[Callable[..., Any], Tuple[Any, ...]]]  # undocumented
     _pipes: dict[int, _File]  # undocumented
     _finished: bool  # undocumented
     def __init__(
@@ -46,11 +45,11 @@ class BaseSubprocessTransport(transports.SubprocessTransport):
     def get_protocol(self) -> protocols.BaseProtocol: ...
     def is_closing(self) -> bool: ...
     def close(self) -> None: ...
-    def get_pid(self) -> int | None: ...  # type: ignore[override]
+    def get_pid(self) -> int | None: ...  # type: ignore
     def get_returncode(self) -> int | None: ...
-    def get_pipe_transport(self, fd: int) -> _File: ...  # type: ignore[override]
+    def get_pipe_transport(self, fd: int) -> _File: ...  # type: ignore
     def _check_proc(self) -> None: ...  # undocumented
-    def send_signal(self, signal: int) -> None: ...  # type: ignore[override]
+    def send_signal(self, signal: int) -> None: ...  # type: ignore
     def terminate(self) -> None: ...
     def kill(self) -> None: ...
     async def _connect_pipes(self, waiter: futures.Future[Any] | None) -> None: ...  # undocumented

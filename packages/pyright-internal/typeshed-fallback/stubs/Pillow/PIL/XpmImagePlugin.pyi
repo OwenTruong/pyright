@@ -1,11 +1,10 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import ImageFile
 
 xpm_head: Any
 
 class XpmImageFile(ImageFile):
-    format: ClassVar[Literal["XPM"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
     def load_read(self, bytes): ...

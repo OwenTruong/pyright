@@ -11,13 +11,13 @@ Msg = Union[MsgA, MsgB]
 
 def func1(m: Msg):
     if m[0] == 1:
-        reveal_type(m, expected_text="Tuple[Literal[1], str]")
+        t1: Literal["Tuple[Literal[1], str]"] = reveal_type(m)
     else:
-        reveal_type(m, expected_text="Tuple[Literal[2], float]")
+        t2: Literal["Tuple[Literal[2], float]"] = reveal_type(m)
 
 
 def func2(m: Msg):
     if m[0] != 1:
-        reveal_type(m, expected_text="Tuple[Literal[2], float]")
+        t1: Literal["Tuple[Literal[2], float]"] = reveal_type(m)
     else:
-        reveal_type(m, expected_text="Tuple[Literal[1], str]")
+        t2: Literal["Tuple[Literal[1], str]"] = reveal_type(m)

@@ -2,7 +2,7 @@ from logging import Logger
 from socket import socket
 from threading import Condition, Event, Lock, Thread
 from types import ModuleType
-from typing import Any, Callable, Iterable, Protocol, Sequence
+from typing import Any, Callable, Iterable, Protocol, Sequence, Tuple, Type
 
 from paramiko.auth_handler import AuthHandler, _InteractiveCallback
 from paramiko.channel import Channel
@@ -14,8 +14,7 @@ from paramiko.sftp_client import SFTPClient
 from paramiko.ssh_gss import _SSH_GSSAuth
 from paramiko.util import ClosingContextManager
 
-_Addr = tuple[str, int]
-_SocketLike = str | _Addr | socket | Channel
+_Addr = Tuple[str, int]
 
 class _KexEngine(Protocol):
     def start_kex(self) -> None: ...
@@ -24,7 +23,7 @@ class _KexEngine(Protocol):
 class Transport(Thread, ClosingContextManager):
     active: bool
     hostname: str | None
-    sock: socket | Channel
+    sock: socket
     packetizer: Packetizer
     local_version: str
     remote_version: str
@@ -68,11 +67,11 @@ class Transport(Thread, ClosingContextManager):
     server_key_dict: dict[str, PKey]
     server_accepts: list[Channel]
     server_accept_cv: Condition
-    subsystem_table: dict[str, tuple[type[SubsystemHandler], tuple[Any, ...], dict[str, Any]]]
+    subsystem_table: dict[str, tuple[Type[SubsystemHandler], Tuple[Any, ...], dict[str, Any]]]
     sys: ModuleType
     def __init__(
         self,
-        sock: _SocketLike,
+        sock: str | tuple[str, int] | socket,
         default_window_size: int = ...,
         default_max_packet_size: int = ...,
         gss_kex: bool = ...,
@@ -139,7 +138,7 @@ class Transport(Thread, ClosingContextManager):
         gss_trust_dns: bool = ...,
     ) -> None: ...
     def get_exception(self) -> Exception | None: ...
-    def set_subsystem_handler(self, name: str, handler: type[SubsystemHandler], *larg: Any, **kwarg: Any) -> None: ...
+    def set_subsystem_handler(self, name: str, handler: Type[SubsystemHandler], *larg: Any, **kwarg: Any) -> None: ...
     def is_authenticated(self) -> bool: ...
     def get_username(self) -> str | None: ...
     def get_banner(self) -> bytes | None: ...

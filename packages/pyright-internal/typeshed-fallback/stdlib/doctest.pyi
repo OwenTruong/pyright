@@ -1,42 +1,6 @@
 import types
 import unittest
-from typing import Any, Callable, NamedTuple
-
-__all__ = [
-    "register_optionflag",
-    "DONT_ACCEPT_TRUE_FOR_1",
-    "DONT_ACCEPT_BLANKLINE",
-    "NORMALIZE_WHITESPACE",
-    "ELLIPSIS",
-    "SKIP",
-    "IGNORE_EXCEPTION_DETAIL",
-    "COMPARISON_FLAGS",
-    "REPORT_UDIFF",
-    "REPORT_CDIFF",
-    "REPORT_NDIFF",
-    "REPORT_ONLY_FIRST_FAILURE",
-    "REPORTING_FLAGS",
-    "FAIL_FAST",
-    "Example",
-    "DocTest",
-    "DocTestParser",
-    "DocTestFinder",
-    "DocTestRunner",
-    "OutputChecker",
-    "DocTestFailure",
-    "UnexpectedException",
-    "DebugRunner",
-    "testmod",
-    "testfile",
-    "run_docstring_examples",
-    "DocTestSuite",
-    "DocFileSuite",
-    "set_unittest_reportflags",
-    "script_from_examples",
-    "testsource",
-    "debug_src",
-    "debug",
-]
+from typing import Any, Callable, NamedTuple, Tuple, Type
 
 class TestResults(NamedTuple):
     failed: int
@@ -83,7 +47,6 @@ class Example:
         options: dict[int, bool] | None = ...,
     ) -> None: ...
     def __hash__(self) -> int: ...
-    def __eq__(self, other: object) -> bool: ...
 
 class DocTest:
     examples: list[Example]
@@ -103,7 +66,6 @@ class DocTest:
     ) -> None: ...
     def __hash__(self) -> int: ...
     def __lt__(self, other: DocTest) -> bool: ...
-    def __eq__(self, other: object) -> bool: ...
 
 class DocTestParser:
     def parse(self, string: str, name: str = ...) -> list[str | Example]: ...
@@ -124,7 +86,7 @@ class DocTestFinder:
     ) -> list[DocTest]: ...
 
 _Out = Callable[[str], Any]
-_ExcInfo = tuple[type[BaseException], BaseException, types.TracebackType]
+_ExcInfo = Tuple[Type[BaseException], BaseException, types.TracebackType]
 
 class DocTestRunner:
     DIVIDER: str
@@ -210,7 +172,6 @@ class DocTestCase(unittest.TestCase):
     def debug(self) -> None: ...
     def id(self) -> str: ...
     def __hash__(self) -> int: ...
-    def __eq__(self, other: object) -> bool: ...
     def shortDescription(self) -> str: ...
 
 class SkipDocTestCase(DocTestCase):

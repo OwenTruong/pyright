@@ -2,7 +2,7 @@
 # narrowing in the case where there is no overlap between the
 # value type and the test type.
 
-from typing import Type, TypeVar
+from typing import Literal, Type, TypeVar
 
 
 class A:
@@ -25,13 +25,13 @@ def func1(val: A):
         # This should generate an error
         val.c_val
 
-        reveal_type(val, expected_text="<subclass of A and B>")
+        t1: Literal["<subclass of A and B>"] = reveal_type(val)
 
         if isinstance(val, C):
             val.a_val
             val.b_val
             val.c_val
-            reveal_type(val, expected_text="<subclass of <subclass of A and B> and C>")
+            t2: Literal["<subclass of <subclass of A and B> and C>"] = reveal_type(val)
 
     else:
         val.a_val
@@ -39,7 +39,7 @@ def func1(val: A):
         # This should generate an error
         val.b_val
 
-        reveal_type(val, expected_text="A")
+        t3: Literal["A"] = reveal_type(val)
 
 
 def func2(val: Type[A]):
@@ -50,15 +50,15 @@ def func2(val: Type[A]):
         # This should generate an error
         val.c_val
 
-        reveal_type(val, expected_text="Type[<subclass of A and B>]")
+        t1: Literal["Type[<subclass of A and B>]"] = reveal_type(val)
 
         if issubclass(val, C):
             val.a_val
             val.b_val
             val.c_val
-            reveal_type(
-                val, expected_text="Type[<subclass of <subclass of A and B> and C>]"
-            )
+            t2: Literal[
+                "Type[<subclass of <subclass of A and B> and C>]"
+            ] = reveal_type(val)
 
     else:
         val.a_val
@@ -66,7 +66,7 @@ def func2(val: Type[A]):
         # This should generate an error
         val.b_val
 
-        reveal_type(val, expected_text="Type[A]")
+        t3: Literal["Type[A]"] = reveal_type(val)
 
 
 _T1 = TypeVar("_T1", bound=A)

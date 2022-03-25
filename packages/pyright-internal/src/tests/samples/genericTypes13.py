@@ -1,7 +1,7 @@
 # This sample tests the type checker's ability to do bidirectional
 # type inference when the expected type is defined by a bound TypeVar.
 
-from typing import Dict, TypeVar
+from typing import Dict, Literal, TypeVar
 
 
 class A:
@@ -24,4 +24,4 @@ def testFunc(value: Dict[str, _T_A]) -> _T_A:
 
 
 x = testFunc({"b": B(), "c": C()})
-reveal_type(x, expected_text="B | C")
+t1: Literal["B | C"] = reveal_type(x)

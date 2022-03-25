@@ -2,6 +2,7 @@
 # with a custom __init__.
 
 from dataclasses import dataclass
+from typing import Literal
 
 
 @dataclass(init=False)
@@ -66,10 +67,10 @@ class E:
 
 
 foo1 = E(3) == E(3)
-reveal_type(foo1, expected_text="float")
+t1: Literal["float"] = reveal_type(foo1)
 
 foo2 = E(3) < E(3)
-reveal_type(foo2, expected_text="str")
+t2: Literal["str"] = reveal_type(foo2)
 
 
 @dataclass(order=True)
@@ -78,4 +79,4 @@ class F:
 
 
 foo3 = F(3) < F(3)
-reveal_type(foo3, expected_text="bool")
+t3: Literal["bool"] = reveal_type(foo3)

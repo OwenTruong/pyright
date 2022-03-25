@@ -1,6 +1,6 @@
-from typing import Pattern, overload
+from typing import List, Pattern, Tuple, overload
 
-_HeaderList = list[tuple[str, str]]
+_HeaderList = List[Tuple[str, str]]
 
 tspecials: Pattern[str]  # undocumented
 

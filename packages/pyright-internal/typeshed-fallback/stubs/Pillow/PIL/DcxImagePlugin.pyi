@@ -1,12 +1,12 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .PcxImagePlugin import PcxImageFile
 
 MAGIC: int
 
 class DcxImageFile(PcxImageFile):
-    format: ClassVar[Literal["DCX"]]
+    format: str
+    format_description: str
     frame: Any
     fp: Any
     def seek(self, frame) -> None: ...

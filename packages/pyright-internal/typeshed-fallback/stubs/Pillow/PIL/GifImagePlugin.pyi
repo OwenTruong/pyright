@@ -1,11 +1,10 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import ImageFile
 
 class GifImageFile(ImageFile):
-    format: ClassVar[Literal["GIF"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
     global_palette: Any
     def data(self): ...
     @property

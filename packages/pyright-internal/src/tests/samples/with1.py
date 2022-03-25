@@ -1,7 +1,6 @@
 # This sample tests various forms of the 'with' statement.
 
-from typing import Any, Generic, Optional, TypeVar
-from typing_extensions import Self
+from typing import Any, Optional, TypeVar
 
 _T1 = TypeVar("_T1")
 
@@ -98,20 +97,3 @@ async def test2():
 
     async with a1 as foo:
         pass
-
-
-class Class5(Generic[_T1]):
-    async def __aenter__(self) -> Self:
-        return self
-
-    async def __aexit__(self, *args: Any) -> None:
-        return None
-
-
-class Class6(Class5[int]):
-    ...
-
-
-async def do():
-    async with Class6() as f:
-        reveal_type(f, expected_text="Class6")

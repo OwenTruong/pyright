@@ -251,9 +251,7 @@ declare namespace _ {
         verifyDiagnostics(map?: { [marker: string]: { category: string; message: string } }): void;
         verifyCodeActions(
             map: {
-                [marker: string]: {
-                    codeActions: { title: string; kind: string; command?: Command; edit?: WorkspaceEdit }[];
-                };
+                [marker: string]: { codeActions: { title: string; kind: string; command: Command }[] };
             },
             verifyCodeActionCount?: boolean
         ): Promise<any>;
@@ -313,11 +311,6 @@ declare namespace _ {
             },
             filter?: DefinitionFilter
         ): void;
-        verifyFindTypeDefinitions(map: {
-            [marker: string]: {
-                definitions: DocumentRange[];
-            };
-        }): void;
         verifyRename(map: {
             [marker: string]: {
                 newName: string;

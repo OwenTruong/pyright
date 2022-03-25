@@ -1,9 +1,6 @@
-from _typeshed import SupportsRead
 from typing import Any
 
 from yaml.error import YAMLError
-
-_ReadStream = str | bytes | SupportsRead[str] | SupportsRead[bytes]
 
 class ReaderError(YAMLError):
     name: Any
@@ -15,7 +12,7 @@ class ReaderError(YAMLError):
 
 class Reader:
     name: Any
-    stream: SupportsRead[str] | SupportsRead[bytes] | None
+    stream: Any
     stream_pointer: Any
     eof: Any
     buffer: Any
@@ -26,7 +23,7 @@ class Reader:
     index: Any
     line: Any
     column: Any
-    def __init__(self, stream: _ReadStream) -> None: ...
+    def __init__(self, stream) -> None: ...
     def peek(self, index=...): ...
     def prefix(self, length=...): ...
     def forward(self, length=...): ...

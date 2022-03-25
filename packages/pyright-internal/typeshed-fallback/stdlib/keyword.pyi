@@ -1,11 +1,6 @@
 import sys
 from typing import Sequence
 
-if sys.version_info >= (3, 9):
-    __all__ = ["iskeyword", "issoftkeyword", "kwlist", "softkwlist"]
-else:
-    __all__ = ["iskeyword", "kwlist"]
-
 def iskeyword(s: str) -> bool: ...
 
 kwlist: Sequence[str]

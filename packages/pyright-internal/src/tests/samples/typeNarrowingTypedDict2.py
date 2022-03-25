@@ -25,11 +25,12 @@ Event = Union[NewJobEvent, CancelJobEvent, OtherEvent]
 
 def process_event(event: Event) -> None:
     if event["tag"] == "new-job":
-        reveal_type(event, expected_text="NewJobEvent")
+        t1: Literal["NewJobEvent"] = reveal_type(event)
         event["job_name"]
     elif event["tag"] == 2:
-        reveal_type(event, expected_text="CancelJobEvent")
+        t2: Literal["CancelJobEvent"] = reveal_type(event)
         event["job_id"]
     else:
-        reveal_type(event, expected_text="OtherEvent")
+        t3: Literal["OtherEvent"] = reveal_type(event)
         event["message"]
+

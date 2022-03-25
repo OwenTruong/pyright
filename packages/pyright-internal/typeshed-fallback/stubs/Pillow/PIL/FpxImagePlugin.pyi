@@ -1,12 +1,11 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import ImageFile
 
 MODES: Any
 
 class FpxImageFile(ImageFile):
-    format: ClassVar[Literal["FPX"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
     fp: Any
     def load(self): ...

@@ -14,7 +14,6 @@ export const enum GlobalMetadataOptionNames {
     typeshed = 'typeshed',
     indexer = 'indexer',
     indexerWithoutStdLib = 'indexerwithoutstdlib',
-    indexerOptions = 'indexeroptions',
 }
 
 /** Any option name not belong to this will become global option */
@@ -22,7 +21,6 @@ export const enum MetadataOptionNames {
     fileName = 'filename',
     library = 'library',
     distLibrary = 'distlibrary',
-    ipythonMode = 'ipythonmode',
 }
 
 /** List of allowed file metadata names */
@@ -30,7 +28,6 @@ export const fileMetadataNames = [
     MetadataOptionNames.fileName,
     MetadataOptionNames.library,
     MetadataOptionNames.distLibrary,
-    MetadataOptionNames.ipythonMode,
 ];
 
 /** all the necessary information to set the right compiler settings */

@@ -29,7 +29,6 @@ class ErrorCodes:
         StreetAddressIsRequired: str
         StreetAddressIsTooLong: str
         TooManyAddressesPerCustomer: str
-
     class ApplePay:
         ApplePayCardsAreNotAccepted: str
         CustomerIdIsRequiredForVaulting: str
@@ -53,7 +52,6 @@ class ErrorCodes:
         InvalidToken: str
         PrivateKeyMismatch: str
         KeyMismatchStoringCertificate: str
-
     class AuthorizationFingerprint:
         MissingFingerprint: str
         InvalidFormat: str
@@ -62,7 +60,6 @@ class ErrorCodes:
         InvalidPublicKey: str
         InvalidSignature: str
         OptionsNotAllowedWithoutCustomer: str
-
     class ClientToken:
         MakeDefaultRequiresCustomerId: str
         VerifyCardRequiresCustomerId: str
@@ -71,7 +68,6 @@ class ErrorCodes:
         ProxyMerchantDoesNotExist: str
         UnsupportedVersion: str
         MerchantAccountDoesNotExist: str
-
     class CreditCard:
         BillingAddressConflict: str
         BillingAddressFormatIsInvalid: str
@@ -117,7 +113,6 @@ class ErrorCodes:
         VerificationNotSupportedOnThisMerchantAccount: str
         VerificationAccountTypeIsInvald: str
         VerificationAccountTypeNotSupported: str
-
         class Options:
             UpdateExistingTokenIsInvalid: str
             UpdateExistingTokenNotAllowed: str
@@ -129,7 +124,6 @@ class ErrorCodes:
             VerificationMerchantAccountIsForbidden: str
             VerificationMerchantAccountIsSuspended: str
             VerificationMerchantAccountCannotBeSubMerchantAccount: str
-
     class Customer:
         CompanyIsTooLong: str
         CustomFieldIsInvalid: str
@@ -151,7 +145,6 @@ class ErrorCodes:
         WebsiteIsInvalid: str
         WebsiteFormatIsInvalid: str
         WebsiteIsTooLong: str
-
     class Descriptor:
         DynamicDescriptorsDisabled: str
         InternationalNameFormatIsInvalid: str
@@ -159,7 +152,6 @@ class ErrorCodes:
         NameFormatIsInvalid: str
         PhoneFormatIsInvalid: str
         UrlFormatIsInvalid: str
-
     class Dispute:
         CanOnlyAddEvidenceToOpenDispute: str
         CanOnlyRemoveEvidenceFromOpenDispute: str
@@ -183,7 +175,6 @@ class ErrorCodes:
         RecurringTransactionEvidenceMissingDate: str
         RecurringTransactionEvidenceMissingARN: str
         ValidEvidenceRequiredToFinalize: str
-
     class DocumentUpload:
         KindIsInvalid: str
         FileIsTooLarge: str
@@ -191,7 +182,6 @@ class ErrorCodes:
         FileIsMalformedOrEncrypted: str
         FileIsTooLong: str
         FileIsEmpty: str
-
     class Merchant:
         CountryCannotBeBlank: str
         CountryCodeAlpha2IsInvalid: str
@@ -213,7 +203,6 @@ class ErrorCodes:
         CurrencyIsInvalid: str
         NoMerchantAccounts: str
         MerchantAccountExistsForId: str
-
     class MerchantAccount:
         IdFormatIsInvalid: str
         IdIsInUse: str
@@ -232,7 +221,6 @@ class ErrorCodes:
         DeclinedFailedKYC: str
         DeclinedSsnInvalid: str
         DeclinedSsnMatchesDeceased: str
-
         class ApplicantDetails:
             AccountNumberIsRequired: str
             CompanyNameIsInvalid: str
@@ -259,7 +247,6 @@ class ErrorCodes:
             EmailAddressIsRequired: str
             AccountNumberIsInvalid: str
             TaxIdMustBeBlank: str
-
             class Address:
                 LocalityIsRequired: str
                 PostalCodeIsInvalid: str
@@ -268,7 +255,6 @@ class ErrorCodes:
                 StreetAddressIsInvalid: str
                 StreetAddressIsRequired: str
                 RegionIsInvalid: str
-
         class Individual:
             FirstNameIsRequired: str
             LastNameIsRequired: str
@@ -280,7 +266,6 @@ class ErrorCodes:
             PhoneIsInvalid: str
             DateOfBirthIsInvalid: str
             EmailAddressIsRequired: str
-
             class Address:
                 StreetAddressIsRequired: str
                 LocalityIsRequired: str
@@ -289,7 +274,6 @@ class ErrorCodes:
                 StreetAddressIsInvalid: str
                 PostalCodeIsInvalid: str
                 RegionIsInvalid: str
-
         class Business:
             DbaNameIsInvalid: str
             LegalNameIsInvalid: str
@@ -297,12 +281,10 @@ class ErrorCodes:
             TaxIdIsInvalid: str
             TaxIdIsRequiredWithLegalName: str
             TaxIdMustBeBlank: str
-
             class Address:
                 StreetAddressIsInvalid: str
                 PostalCodeIsInvalid: str
                 RegionIsInvalid: str
-
         class Funding:
             RoutingNumberIsRequired: str
             AccountNumberIsRequired: str
@@ -314,14 +296,12 @@ class ErrorCodes:
             EmailAddressIsRequired: str
             MobilePhoneIsInvalid: str
             MobilePhoneIsRequired: str
-
     class OAuth:
         InvalidGrant: str
         InvalidCredentials: str
         InvalidScope: str
         InvalidRequest: str
         UnsupportedGrantType: str
-
     class Verification:
         ThreeDSecureAuthenticationIdIsInvalid: str
         ThreeDSecureAuthenticationIdDoesntMatchNonceThreeDSecureAuthentication: str
@@ -333,7 +313,6 @@ class ErrorCodes:
         MerchantAccountDoesNotSupport3DSecure: str
         MerchantAcountDoesNotMatch3DSecureMerchantAccount: str
         AmountDoesNotMatch3DSecureAmount: str
-
         class ThreeDSecurePassThru:
             EciFlagIsRequired: str
             EciFlagIsInvalid: str
@@ -343,7 +322,6 @@ class ErrorCodes:
             AuthenticationResponseIsInvalid: str
             DirectoryResponseIsInvalid: str
             CavvAlgorithmIsInvalid: str
-
         class Options:
             AmountCannotBeNegative: str
             AmountFormatIsInvalid: str
@@ -355,7 +333,6 @@ class ErrorCodes:
             MerchantAccountCannotBeSubMerchantAccount: str
             AccountTypeIsInvalid: str
             AccountTypeNotSupported: str
-
     class PaymentMethod:
         CannotForwardPaymentMethodType: str
         PaymentMethodParamsAreRequired: str
@@ -371,10 +348,8 @@ class ErrorCodes:
         CannotHaveFundingSourceWithoutAccessToken: str
         InvalidFundingSourceSelection: str
         CannotUpdatePayPalAccountUsingPaymentMethodNonce: str
-
         class Options:
             UsBankAccountVerificationMethodIsInvalid: str
-
     class PayPalAccount:
         CannotHaveBothAccessTokenAndConsentCode: str
         CannotVaultOneTimeUsePayPalAccount: str
@@ -387,12 +362,10 @@ class ErrorCodes:
         PaymentMethodNonceLocked: str
         PaymentMethodNonceUnknown: str
         TokenIsInUse: str
-
     class SettlementBatchSummary:
         CustomFieldIsInvalid: str
         SettlementDateIsInvalid: str
         SettlementDateIsRequired: str
-
     class SEPAMandate:
         TypeIsRequired: str
         IBANInvalidCharacter: str
@@ -404,12 +377,10 @@ class ErrorCodes:
         BillingAddressConflict: str
         BillingAddressIdIsInvalid: str
         TypeIsInvalid: str
-
     class EuropeBankAccount:
         BICIsRequired: str
         IBANIsRequired: str
         AccountHolderNameIsRequired: str
-
     class Subscription:
         BillingDayOfMonthCannotBeUpdated: str
         BillingDayOfMonthIsInvalid: str
@@ -451,7 +422,6 @@ class ErrorCodes:
         TrialDurationFormatIsInvalid: str
         TrialDurationIsRequired: str
         TrialDurationUnitIsInvalid: str
-
         class Modification:
             AmountCannotBeBlank: str
             AmountIsInvalid: str
@@ -474,7 +444,6 @@ class ErrorCodes:
             QuantityIsInvalid: str
             QuantityMustBeGreaterThanZero: str
             IdToRemoveIsInvalid: str
-
     class Transaction:
         AdjustmentAmountMustBeGreaterThanZero: str
         AmountCannotBeNegative: str
@@ -617,30 +586,24 @@ class ErrorCodes:
         UnsupportedVoiceAuthorization: str
         UsBankAccountNonceMustBePlaidVerified: str
         UsBankAccountNotVerified: str
-
         class ExternalVault:
             StatusIsInvalid: str
             StatusWithPreviousNetworkTransactionIdIsInvalid: str
             CardTypeIsInvalid: str
             PreviousNetworkTransactionIdIsInvalid: str
-
         class Options:
             SubmitForSettlementIsRequiredForCloning: str
             SubmitForSettlementIsRequiredForPayPalUnilateral: str
             UseBillingForShippingDisabled: str
             VaultIsDisabled: str
-
             class PayPal:
                 CustomFieldTooLong: str
-
             class CreditCard:
                 AccountTypeIsInvalid: str
                 AccountTypeNotSupported: str
                 AccountTypeDebitDoesNotSupportAuths: str
-
         class Industry:
             IndustryTypeIsInvalid: str
-
             class Lodging:
                 EmptyData: str
                 FolioNumberIsInvalid: str
@@ -658,7 +621,6 @@ class ErrorCodes:
                 AdvancedDepositIndicatorIsInvalid: str
                 FireSafetyIndicatorIsInvalid: str
                 PropertyPhoneIsInvalid: str
-
             class TravelCruise:
                 EmptyData: str
                 UnknownDataField: str
@@ -666,7 +628,6 @@ class ErrorCodes:
                 DepartureDateIsInvalid: str
                 LodgingCheckInDateIsInvalid: str
                 LodgingCheckOutDateIsInvalid: str
-
             class TravelFlight:
                 EmptyData: str
                 UnknownDataField: str
@@ -687,7 +648,6 @@ class ErrorCodes:
                 TicketNumberIsTooLong: str
                 LegsExpected: str
                 TooManyLegs: str
-
             class Leg:
                 class TravelFlight:
                     ArrivalAirportCodeIsTooLong: str
@@ -710,7 +670,6 @@ class ErrorCodes:
                     TaxAmountFormatIsInvalid: str
                     TaxAmountIsTooLarge: str
                     TicketNumberIsTooLong: str
-
             class AdditionalCharge:
                 KindIsInvalid: str
                 KindMustBeUnique: str
@@ -718,7 +677,6 @@ class ErrorCodes:
                 AmountFormatIsInvalid: str
                 AmountIsTooLarge: str
                 AmountIsRequired: str
-
         class LineItem:
             CommodityCodeIsTooLong: str
             DescriptionIsTooLong: str
@@ -748,7 +706,6 @@ class ErrorCodes:
             TaxAmountFormatIsInvalid: str
             TaxAmountIsTooLarge: str
             TaxAmountCannotBeNegative: str
-
     class UsBankAccountVerification:
         NotConfirmable: str
         MustBeMicroTransfersVerification: str
@@ -756,7 +713,6 @@ class ErrorCodes:
         TooManyConfirmationAttempts: str
         UnableToConfirmDepositAmounts: str
         InvalidDepositAmounts: str
-
     class RiskData:
         CustomerBrowserIsTooLong: str
         CustomerDeviceIdIsTooLong: str

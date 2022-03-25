@@ -12,7 +12,7 @@ import { MessageChannel, MessagePort, parentPort, threadId, Worker, workerData }
 
 import { AnalysisCompleteCallback, AnalysisResults, analyzeProgram, nullCallback } from './analyzer/analysis';
 import { ImportResolver } from './analyzer/importResolver';
-import { Indices, OpenFileOptions, Program } from './analyzer/program';
+import { Indices, Program } from './analyzer/program';
 import {
     BackgroundThreadBase,
     createConfigOptionsFrom,
@@ -108,27 +108,21 @@ export class BackgroundAnalysisBase {
         filePath: string,
         version: number | null,
         contents: TextDocumentContentChangeEvent[],
-        options: OpenFileOptions
+        isTracked: boolean
     ) {
-        this.enqueueRequest({
-            requestType: 'setFileOpened',
-            data: { filePath, version, contents, options },
-        });
+        this.enqueueRequest({ requestType: 'setFileOpened', data: { filePath, version, contents, isTracked } });
     }
 
     setFileClosed(filePath: string) {
         this.enqueueRequest({ requestType: 'setFileClosed', data: filePath });
     }
 
-    markAllFilesDirty(evenIfContentsAreSame: boolean, indexingNeeded: boolean) {
-        this.enqueueRequest({ requestType: 'markAllFilesDirty', data: { evenIfContentsAreSame, indexingNeeded } });
+    markAllFilesDirty(evenIfContentsAreSame: boolean) {
+        this.enqueueRequest({ requestType: 'markAllFilesDirty', data: evenIfContentsAreSame });
     }
 
-    markFilesDirty(filePaths: string[], evenIfContentsAreSame: boolean, indexingNeeded: boolean) {
-        this.enqueueRequest({
-            requestType: 'markFilesDirty',
-            data: { filePaths, evenIfContentsAreSame, indexingNeeded },
-        });
+    markFilesDirty(filePaths: string[], evenIfContentsAreSame: boolean) {
+        this.enqueueRequest({ requestType: 'markFilesDirty', data: { filePaths, evenIfContentsAreSame } });
     }
 
     startAnalysis(indices: Indices | undefined, token: CancellationToken) {
@@ -182,17 +176,11 @@ export class BackgroundAnalysisBase {
         this.enqueueRequest({ requestType, data: cancellationId, port: port2 });
     }
 
-    startIndexing(
-        indexOptions: IndexOptions,
-        configOptions: ConfigOptions,
-        importResolver: ImportResolver,
-        kind: HostKind,
-        indices: Indices
-    ) {
+    startIndexing(configOptions: ConfigOptions, kind: HostKind, indices: Indices) {
         /* noop */
     }
 
-    refreshIndexing(configOptions: ConfigOptions, importResolver: ImportResolver, kind: HostKind, indices?: Indices) {
+    refreshIndexing(configOptions: ConfigOptions, kind: HostKind, indices?: Indices) {
         /* noop */
     }
 
@@ -245,8 +233,8 @@ export class BackgroundAnalysisBase {
         port1.close();
     }
 
-    invalidateAndForceReanalysis(rebuildUserFileIndexing: boolean) {
-        this.enqueueRequest({ requestType: 'invalidateAndForceReanalysis', data: rebuildUserFileIndexing });
+    invalidateAndForceReanalysis() {
+        this.enqueueRequest({ requestType: 'invalidateAndForceReanalysis', data: null });
     }
 
     restart() {
@@ -412,8 +400,8 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
             }
 
             case 'setFileOpened': {
-                const { filePath, version, contents, options } = msg.data;
-                this.program.setFileOpened(filePath, version, contents, options);
+                const { filePath, version, contents, isTracked } = msg.data;
+                this.program.setFileOpened(filePath, version, contents, isTracked);
                 break;
             }
 
@@ -424,14 +412,13 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
             }
 
             case 'markAllFilesDirty': {
-                const { evenIfContentsAreSame, indexingNeeded } = msg.data;
-                this.program.markAllFilesDirty(evenIfContentsAreSame, indexingNeeded);
+                this.program.markAllFilesDirty(msg.data);
                 break;
             }
 
             case 'markFilesDirty': {
-                const { filePaths, evenIfContentsAreSame, indexingNeeded } = msg.data;
-                this.program.markFilesDirty(filePaths, evenIfContentsAreSame, indexingNeeded);
+                const { filePaths, evenIfContentsAreSame } = msg.data;
+                this.program.markFilesDirty(filePaths, evenIfContentsAreSame);
                 break;
             }
 
@@ -441,7 +428,7 @@ export abstract class BackgroundAnalysisRunnerBase extends BackgroundThreadBase 
                 this._importResolver.invalidateCache();
 
                 // Mark all files with one or more errors dirty.
-                this.program.markAllFilesDirty(/* evenIfContentsAreSame */ true, /* indexingNeeded */ msg.data);
+                this.program.markAllFilesDirty(true);
                 break;
             }
 
@@ -584,9 +571,4 @@ export interface AnalysisRequest {
 export interface AnalysisResponse {
     requestType: 'log' | 'telemetry' | 'analysisResult' | 'analysisPaused' | 'indexResult' | 'analysisDone';
     data: any;
-}
-
-export interface IndexOptions {
-    // forceIndexing means it will include symbols not shown in __all__ for py file.
-    packageDepths: [moduleName: string, maxDepth: number, forceIndexing: boolean][];
 }

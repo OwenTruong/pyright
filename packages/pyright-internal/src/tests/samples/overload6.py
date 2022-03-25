@@ -23,7 +23,6 @@ class SupportsRound1(Protocol[_T_co]):
     def __round__(self, ndigits: int) -> _T_co:
         ...
 
-    # This should generate an error because the return type isn't compatible.
     def __round__(self, ndigits: int = 0) -> _T_co:
         ...
 

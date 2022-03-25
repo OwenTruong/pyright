@@ -2,7 +2,7 @@
 # constructs an instance of the same type using a type variable
 # within that class.
 
-from typing import Generic, Protocol, Tuple, TypeVar
+from typing import Generic, Literal, Protocol, Tuple, TypeVar
 
 
 T = TypeVar("T")
@@ -27,14 +27,14 @@ class B(Generic[T]):
         t = (self._t,)
         y = B(t)
         v = f(y.b())
-        reveal_type(v, expected_text="tuple[T@B]")
+        t1: Literal["tuple[T@B]"] = reveal_type(v)
         return y
 
     def b(self) -> A[Tuple[T]]:
         x = (self._t,)
-        reveal_type(x, expected_text="tuple[T@B]")
+        t1: Literal["tuple[T@B]"] = reveal_type(x)
         y = B(x)
-        reveal_type(y, expected_text="B[tuple[T@B]]")
+        t2: Literal["B[tuple[T@B]]"] = reveal_type(y)
         return y
 
     def c(self) -> T:

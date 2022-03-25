@@ -24,7 +24,6 @@ import { isStubFile, SourceMapper } from '../analyzer/sourceMapper';
 import { TypeEvaluator } from '../analyzer/typeEvaluatorTypes';
 import { TypeCategory } from '../analyzer/types';
 import { throwIfCancellationRequested } from '../common/cancellationUtils';
-import { appendArray } from '../common/collectionUtils';
 import { TextRange } from '../common/textRange';
 import { ImportAsNode, NameNode, ParseNode, ParseNodeType, StringNode } from '../parser/parseNodes';
 
@@ -41,8 +40,7 @@ export class DocumentSymbolCollector extends ParseTreeWalker {
         evaluator: TypeEvaluator,
         cancellationToken: CancellationToken,
         startingNode?: ParseNode,
-        treatModuleInImportAndFromImportSame = false,
-        skipUnreachableCode = true
+        treatModuleInImportAndFromImportSame = false
     ): CollectionResult[] {
         const symbolName = node.value;
         const declarations = this.getDeclarationsForNode(
@@ -63,8 +61,7 @@ export class DocumentSymbolCollector extends ParseTreeWalker {
             evaluator,
             cancellationToken,
             startingNode,
-            treatModuleInImportAndFromImportSame,
-            skipUnreachableCode
+            treatModuleInImportAndFromImportSame
         );
 
         return collector.collect();
@@ -110,8 +107,7 @@ export class DocumentSymbolCollector extends ParseTreeWalker {
         private _evaluator: TypeEvaluator,
         private _cancellationToken: CancellationToken,
         private _startingNode: ParseNode,
-        private _treatModuleInImportAndFromImportSame = false,
-        private _skipUnreachableCode = true
+        private _treatModuleInImportAndFromImportSame = false
     ) {
         super();
 
@@ -126,7 +122,7 @@ export class DocumentSymbolCollector extends ParseTreeWalker {
     }
 
     override walk(node: ParseNode) {
-        if (!this._skipUnreachableCode || !AnalyzerNodeInfo.isCodeUnreachable(node)) {
+        if (!AnalyzerNodeInfo.isCodeUnreachable(node)) {
             super.walk(node);
         }
     }
@@ -140,11 +136,7 @@ export class DocumentSymbolCollector extends ParseTreeWalker {
         }
 
         if (this._declarations.length > 0) {
-            const declarations = DocumentSymbolCollector._getDeclarationsForNode(
-                node,
-                this._evaluator,
-                this._skipUnreachableCode
-            );
+            const declarations = DocumentSymbolCollector._getDeclarationsForNode(node, this._evaluator);
 
             if (declarations && declarations.length > 0) {
                 // Does this name share a declaration with the symbol of interest?
@@ -271,15 +263,11 @@ export class DocumentSymbolCollector extends ParseTreeWalker {
         declarations.push(itemToAdd);
     }
 
-    private static _getDeclarationsForNode(
-        node: NameNode,
-        evaluator: TypeEvaluator,
-        skipUnreachableCode = true
-    ): Declaration[] {
+    private static _getDeclarationsForNode(node: NameNode, evaluator: TypeEvaluator): Declaration[] {
         // This can handle symbols brought in by wildcard as long as declarations symbol collector
         // compare against point to actual alias declaration, not one that use local name (ex, import alias)
         if (node.parent?.nodeType !== ParseNodeType.ModuleName) {
-            let decls = evaluator.getDeclarationsForNameNode(node, skipUnreachableCode) || [];
+            let decls = evaluator.getDeclarationsForNameNode(node) || [];
 
             if (node.parent?.nodeType === ParseNodeType.ImportFromAs) {
                 // Make sure we get the decl for this specific from import statement
@@ -303,13 +291,11 @@ export class DocumentSymbolCollector extends ParseTreeWalker {
             for (const aliasDecl of decls.filter((d) => isAliasDeclaration(d) && !d.loadSymbolsFromPath)) {
                 const node = (aliasDecl as AliasDeclaration).node;
                 if (node.nodeType === ParseNodeType.ImportFromAs) {
-                    // from ... import X case, decl in the submodule fallback has the path.
+                    // from ... import X case, decl in the submodulefallback has the path.
                     continue;
                 }
 
-                decls.push(
-                    ...(evaluator.getDeclarationsForNameNode(node.module.nameParts[0], skipUnreachableCode) || [])
-                );
+                decls.push(...(evaluator.getDeclarationsForNameNode(node.module.nameParts[0]) || []));
             }
 
             return decls;
@@ -345,10 +331,7 @@ export class DocumentSymbolCollector extends ParseTreeWalker {
                 // ex) import X or from .X import ... in init file and etc.
                 const symbolWithScope = ScopeUtils.getScopeForNode(node)?.lookUpSymbolRecursive(importName);
                 if (symbolWithScope && moduleName.nameParts.length === 1) {
-                    appendArray(
-                        decls,
-                        symbolWithScope.symbol.getDeclarations().filter((d) => isAliasDeclaration(d))
-                    );
+                    decls.push(...symbolWithScope.symbol.getDeclarations().filter((d) => isAliasDeclaration(d)));
 
                     // If symbols are re-used, then find one that belong to this import statement.
                     if (decls.length > 1) {

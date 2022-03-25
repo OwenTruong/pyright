@@ -10,7 +10,6 @@ import { isNumber, isString } from '../common/core';
 import { assertNever } from '../common/debug';
 import { ensureTrailingDirectorySeparator, stripFileExtension } from '../common/pathUtils';
 import { isExpressionNode, ParseNode, ParseNodeType } from '../parser/parseNodes';
-import { AbsoluteModuleDescriptor } from './analyzerFileInfo';
 import * as AnalyzerNodeInfo from './analyzerNodeInfo';
 import { Declaration, DeclarationType } from './declaration';
 import * as ParseTreeUtils from './parseTreeUtils';
@@ -21,7 +20,7 @@ export type PrintableType = ParseNode | Declaration | Symbol | Type | undefined;
 
 export interface TracePrinter {
     print(o: PrintableType): string;
-    printFileOrModuleName(filePathOrModule: string | AbsoluteModuleDescriptor): string;
+    printFileOrModuleName(filePath: string): string;
 }
 
 export function createTracePrinter(roots: string[]): TracePrinter {
@@ -38,20 +37,16 @@ export function createTracePrinter(roots: string[]): TracePrinter {
         .reverse();
 
     const separatorRegExp = /[\\/]/g;
-    function printFileOrModuleName(filePathOrModule: string | AbsoluteModuleDescriptor | undefined) {
-        if (filePathOrModule) {
-            if (typeof filePathOrModule === 'string') {
-                for (const root of roots) {
-                    if (filePathOrModule.startsWith(root)) {
-                        const subFile = filePathOrModule.substring(root.length);
-                        return stripFileExtension(subFile).replace(separatorRegExp, '.');
-                    }
+    function printFileOrModuleName(filePath: string | undefined) {
+        if (filePath) {
+            for (const root of roots) {
+                if (filePath.startsWith(root)) {
+                    const subFile = filePath.substring(root.length);
+                    return stripFileExtension(subFile).replace(separatorRegExp, '.');
                 }
-
-                return filePathOrModule;
-            } else {
-                return filePathOrModule.nameParts.join('.');
             }
+
+            return filePath;
         }
         return '';
     }

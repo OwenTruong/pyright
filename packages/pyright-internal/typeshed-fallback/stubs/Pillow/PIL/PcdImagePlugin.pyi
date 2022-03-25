@@ -1,10 +1,9 @@
-from typing import Any, ClassVar
-from typing_extensions import Literal
+from typing import Any
 
 from .ImageFile import ImageFile
 
 class PcdImageFile(ImageFile):
-    format: ClassVar[Literal["PCD"]]
-    format_description: ClassVar[str]
+    format: str
+    format_description: str
     im: Any
     def load_end(self) -> None: ...

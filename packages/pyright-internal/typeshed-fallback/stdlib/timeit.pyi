@@ -1,9 +1,7 @@
-from typing import IO, Any, Callable, Sequence
-
-__all__ = ["Timer", "timeit", "repeat", "default_timer"]
+from typing import IO, Any, Callable, Sequence, Union
 
 _Timer = Callable[[], float]
-_Stmt = str | Callable[[], Any]
+_Stmt = Union[str, Callable[[], Any]]
 
 default_timer: _Timer
 
@@ -27,4 +25,7 @@ def repeat(
     number: int = ...,
     globals: dict[str, Any] | None = ...,
 ) -> list[float]: ...
-def main(args: Sequence[str] | None = ..., *, _wrap_timer: Callable[[_Timer], _Timer] | None = ...) -> None: ...
+
+_timerFunc = Callable[[], float]
+
+def main(args: Sequence[str] | None = ..., *, _wrap_timer: Callable[[_timerFunc], _timerFunc] | None = ...) -> None: ...

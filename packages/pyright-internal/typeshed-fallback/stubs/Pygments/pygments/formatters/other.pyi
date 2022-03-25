@@ -1,16 +1,14 @@
-from typing import Any, TypeVar
+from typing import Any
 
 from pygments.formatter import Formatter
 
-_T = TypeVar("_T", str, bytes)
-
-class NullFormatter(Formatter[_T]):
+class NullFormatter(Formatter):
     name: str
     aliases: Any
     filenames: Any
     def format(self, tokensource, outfile) -> None: ...
 
-class RawTokenFormatter(Formatter[_T]):
+class RawTokenFormatter(Formatter):
     name: str
     aliases: Any
     filenames: Any
@@ -18,9 +16,11 @@ class RawTokenFormatter(Formatter[_T]):
     encoding: str
     compress: Any
     error_color: Any
+    def __init__(self, **options) -> None: ...
     def format(self, tokensource, outfile) -> None: ...
 
-class TestcaseFormatter(Formatter[_T]):
+class TestcaseFormatter(Formatter):
     name: str
     aliases: Any
+    def __init__(self, **options) -> None: ...
     def format(self, tokensource, outfile) -> None: ...

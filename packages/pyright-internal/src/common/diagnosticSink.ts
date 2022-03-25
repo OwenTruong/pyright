@@ -7,7 +7,6 @@
  * Class that represents errors and warnings.
  */
 
-import { appendArray } from './collectionUtils';
 import { DiagnosticLevel } from './configOptions';
 import { Diagnostic, DiagnosticAction, DiagnosticCategory } from './diagnostic';
 import { convertOffsetsToRange } from './positionUtils';
@@ -81,7 +80,7 @@ export class DiagnosticSink {
     }
 
     addDiagnostics(diagsToAdd: Diagnostic[]) {
-        appendArray(this._diagnosticList, diagsToAdd);
+        this._diagnosticList.push(...diagsToAdd);
     }
 
     getErrors() {

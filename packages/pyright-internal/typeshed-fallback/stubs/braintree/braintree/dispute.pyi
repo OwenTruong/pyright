@@ -17,7 +17,6 @@ class Dispute(AttributeGetter):
         Open: str
         Won: str
         Lost: str
-
     class Reason:
         CancelledRecurringTransaction: str
         CreditNotProcessed: str
@@ -30,12 +29,10 @@ class Dispute(AttributeGetter):
         ProductUnsatisfactory: str
         Retrieval: str
         TransactionAmountDiffers: str
-
     class Kind:
         Chargeback: str
         PreArbitration: str
         Retrieval: str
-
     class ChargebackProtectionLevel:
         Effortless: str
         Standard: str
