@@ -4385,6 +4385,14 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 }
             }
 
+            if (classType.details.name == "Series" && ["str", "cat", "sparse"].includes(memberName)) {
+                type = Object.assign({}, classType);
+                type.flags = 2;
+                let details = Object.assign({}, type.details);
+                details.name = "Series." + memberName;
+                type.details = details
+            }
+
             return {
                 type,
                 isTypeIncomplete,
@@ -7374,6 +7382,25 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 return undefined;
             }
         );
+
+        if (isFunction(callType) && callType.details.name === "train_test_split") {
+            let tuple = TupleNode.create(TextRange.create(0,10), true);
+            for (let arg of argList) {
+                if (arg.valueExpression && arg.name === undefined) {
+                    tuple.expressions = tuple.expressions.concat([arg.valueExpression, arg.valueExpression]);
+                }
+            }
+            // tuple.expressions = argList.map(arg => {
+            //     if (arg.valueExpression !== undefined)
+            //         return arg.valueExpression
+            // } )
+            let newReturnType = getTypeFromTuple(tuple, undefined, EvaluatorFlags.None);
+            return {
+                argumentErrors,
+                returnType: newReturnType.type,
+                isTypeIncomplete,
+            };
+        }
 
         return {
             argumentErrors,
