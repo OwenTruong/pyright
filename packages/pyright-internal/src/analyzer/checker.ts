@@ -1147,7 +1147,7 @@ export class Checker extends ParseTreeWalker {
             let type = this._evaluator.printType(ret);
             if (typeMap.has(type))
                 type = typeMap.get(type) || "";
-            if (!(node.value in name2type)) {
+            if (!name2type.has(node.value)) {
                 if (type.startsWith("Module("))
                     name2type.set(node.value, ["module", type.replace(/Module|\"|\(|\)/g, '')])
                 else {
