@@ -1048,7 +1048,9 @@ export class SourceFile {
                 timingStats.typeCheckerTime.timeOperation(() => {
                     const checker = new Checker(this._parseResults!.parseTree, evaluator);
                     let typeResult = checker.check();
-                    this.fileSystem.writeFileSync(this._filePath.replace("ir.py", "json"), typeResult, 'utf8');
+                    if (this._filePath.endsWith('.ir.py')) {
+                        this.fileSystem.writeFileSync(this._filePath.replace(".ir.py", ".json"), typeResult, 'utf8')
+                    };
                     this._isCheckingNeeded = false;
 
                     const fileInfo = AnalyzerNodeInfo.getFileInfo(this._parseResults!.parseTree)!;
