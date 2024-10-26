@@ -4385,6 +4385,14 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 }
             }
 
+            if (classType.details.name == "Series" && ["str", "cat", "sparse"].includes(memberName)) {
+                type = Object.assign({}, classType);
+                type.flags = 2;
+                let details = Object.assign({}, type.details);
+                details.name = "Series." + memberName;
+                type.details = details
+            }
+
             return {
                 type,
                 isTypeIncomplete,
@@ -7374,6 +7382,25 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
                 return undefined;
             }
         );
+
+        if (isFunction(callType) && callType.details.name === "train_test_split") {
+            let tuple = TupleNode.create(TextRange.create(0,10), true);
+            for (let arg of argList) {
+                if (arg.valueExpression && arg.name === undefined) {
+                    tuple.expressions = tuple.expressions.concat([arg.valueExpression, arg.valueExpression]);
+                }
+            }
+            // tuple.expressions = argList.map(arg => {
+            //     if (arg.valueExpression !== undefined)
+            //         return arg.valueExpression
+            // } )
+            let newReturnType = getTypeFromTuple(tuple, undefined, EvaluatorFlags.None);
+            return {
+                argumentErrors,
+                returnType: newReturnType.type,
+                isTypeIncomplete,
+            };
+        }
 
         return {
             argumentErrors,
@@ -12173,47 +12200,49 @@ export function createTypeEvaluator(importLookup: ImportLookup, evaluatorOptions
 
                     // If this was a speculative type alias, it becomes a real type alias
                     // only if the evaluated type is an instantiable type.
-                    if (
-                        !isSpeculativeTypeAlias ||
-                        (TypeBase.isInstantiable(rightHandType) && !isUnknown(rightHandType))
-                    ) {
-                        // If this is a type alias, record its name based on the assignment target.
-                        rightHandType = transformTypeForTypeAlias(
-                            rightHandType,
-                            typeAliasNameNode,
-                            node.rightExpression
-                        );
 
-                        if (isTypeAliasRecursive(typeAliasTypeVar!, rightHandType)) {
-                            addDiagnostic(
-                                fileInfo.diagnosticRuleSet.reportGeneralTypeIssues,
-                                DiagnosticRule.reportGeneralTypeIssues,
-                                Localizer.Diagnostic.typeAliasIsRecursiveDirect().format({
-                                    name: typeAliasNameNode.value,
-                                }),
-                                node.rightExpression
-                            );
-                        }
+                    // **DISABLED**
+                    // if (
+                    //     !isSpeculativeTypeAlias ||
+                    //     (TypeBase.isInstantiable(rightHandType) && !isUnknown(rightHandType))
+                    // ) {
+                    //     // If this is a type alias, record its name based on the assignment target.
+                    //     rightHandType = transformTypeForTypeAlias(
+                    //         rightHandType,
+                    //         typeAliasNameNode,
+                    //         node.rightExpression
+                    //     );
 
-                        // Set the resulting type to the boundType of the original type alias
-                        // to support recursive type aliases.
-                        typeAliasTypeVar!.details.boundType = rightHandType;
+                    //     if (isTypeAliasRecursive(typeAliasTypeVar!, rightHandType)) {
+                    //         addDiagnostic(
+                    //             fileInfo.diagnosticRuleSet.reportGeneralTypeIssues,
+                    //             DiagnosticRule.reportGeneralTypeIssues,
+                    //             Localizer.Diagnostic.typeAliasIsRecursiveDirect().format({
+                    //                 name: typeAliasNameNode.value,
+                    //             }),
+                    //             node.rightExpression
+                    //         );
+                    //     }
 
-                        // Record the type parameters within the recursive type alias so it
-                        // can be specialized.
-                        typeAliasTypeVar!.details.recursiveTypeParameters = rightHandType.typeAliasInfo?.typeParameters;
-                    }
+                    //     // Set the resulting type to the boundType of the original type alias
+                    //     // to support recursive type aliases.
+                    //     typeAliasTypeVar!.details.boundType = rightHandType;
 
-                    if (typeAliasTypeVar!.details.illegalRecursionDetected) {
-                        addDiagnostic(
-                            fileInfo.diagnosticRuleSet.reportGeneralTypeIssues,
-                            DiagnosticRule.reportGeneralTypeIssues,
-                            Localizer.Diagnostic.typeAliasIsRecursiveIndirect().format({
-                                name: typeAliasNameNode.value,
-                            }),
-                            node.leftExpression
-                        );
-                    }
+                    //     // Record the type parameters within the recursive type alias so it
+                    //     // can be specialized.
+                    //     typeAliasTypeVar!.details.recursiveTypeParameters = rightHandType.typeAliasInfo?.typeParameters;
+                    // }
+
+                    // if (typeAliasTypeVar!.details.illegalRecursionDetected) {
+                    //     addDiagnostic(
+                    //         fileInfo.diagnosticRuleSet.reportGeneralTypeIssues,
+                    //         DiagnosticRule.reportGeneralTypeIssues,
+                    //         Localizer.Diagnostic.typeAliasIsRecursiveIndirect().format({
+                    //             name: typeAliasNameNode.value,
+                    //         }),
+                    //         node.leftExpression
+                    //     );
+                    // }
                 }
             }
         }

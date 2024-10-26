@@ -9,8 +9,10 @@
             "protocol": "inspector",
             "preLaunchTask": "npm: build:cli:dev",
             "args": [
-                "--verifytypes",
-                "pandas.core.reshape.concat",
+                // "--verifytypes",
+                // "pandas.core.reshape.concat",
+                "../GitHubAPI-Crawler/notebooks/2021-01-01/nb_1345.py.ir.py",
+                "--lib"
             ],
             "internalConsoleOptions": "openOnSessionStart",
             "outFiles": [
