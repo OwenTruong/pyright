@@ -184,9 +184,9 @@ export function printType(
 
             case TypeCategory.Class: {
                 if (TypeBase.isInstance(type)) {
-                    if (type.literalValue !== undefined) {
-                        return `Literal[${printLiteralValue(type)}]`;
-                    }
+                    // if (type.literalValue !== undefined) {
+                    //     return `Literal[${printLiteralValue(type)}]`;
+                    // }
 
                     return `${printObjectTypeForClass(
                         type,
@@ -195,9 +195,9 @@ export function printType(
                         recursionTypes
                     )}${getConditionalIndicator(type)}`;
                 } else {
-                    if (type.literalValue !== undefined) {
-                        return `Type[Literal[${printLiteralValue(type)}]]${getConditionalIndicator(type)}`;
-                    }
+                    // if (type.literalValue !== undefined) {
+                    //     return `Type[Literal[${printLiteralValue(type)}]]${getConditionalIndicator(type)}`;
+                    // }
 
                     return `Type[${printObjectTypeForClass(
                         type,
